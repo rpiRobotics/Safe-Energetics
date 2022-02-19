@@ -10,3 +10,14 @@ Simply run
 ```
 ./initial_setup.bash
 ```
+
+# Launching Test Simulation
+
+Run
+```
+roslaunch safe_energetics_testbed test_safe_energetics_testbed.launch
+```
+
+You will be able to adjust the joints of FANUC M710-iC/45M robot in the RPI testbed cage
+
+![test_simulation](/.readme_include/test_simulation.png)
