@@ -11,6 +11,8 @@ Simply run
 ./initial_setup.bash
 ```
 
+It creates a folder named `catkin_ws_safe_energetics` in your home directory and builds the packages in this repo including the ROS-I FANUC support repo.
+
 ## Launching Test Simulation
 
 Run
