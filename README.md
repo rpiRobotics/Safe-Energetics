@@ -6,7 +6,7 @@ This is a repository for Safe Energetics Project
 
 Assuming you have ROS Melodic installed on Ubuntu 18.04,
 
-Without cloning this repo by yourself, simply run
+Without cloning this repo by yourself, simply download and run
 ```
 ./initial_setup.bash
 ```
