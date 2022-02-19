@@ -1,16 +1,13 @@
 <?xml version="1.0"?>
-<robot name="arm_safe_energetics_testbed" xmlns:xacro="http://ros.org/wiki/xacro">  
+<robot name="safe_energetics_testbed" xmlns:xacro="http://ros.org/wiki/xacro">  
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/irb6640_180_255.xacro"/>
 
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/m710ic45m.xacro"/>
 
-  <xacro:include filename="$(find safe_energetics_testbed)/urdf/testbed_walls_macro.xacro"/>
-
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/cage.xacro"/>
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/cabinet.xacro"/>
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/hopper_long.xacro"/>
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/hopper_short.xacro"/>
-
-  <xacro:testbed_walls prefix=""/>
 
   <link name="world"/>
 
@@ -41,9 +38,9 @@
     <origin rpy="0 0 0" xyz="1.5 0.75 0"/>
   </joint>
 
-  <joint name="walls_to_world" type="fixed">
+  <joint name="cage_to_world" type="fixed">
     <parent link="world"/>
-    <child link="testbed_walls"/>
+    <child link="cage_base_link"/>
     <origin rpy="0 0 -1.57079" xyz="-1.282 3.271 0"/>
   </joint>
 
@@ -63,26 +60,17 @@
   <joint name="cabinet_to_world" type="fixed">
     <child link="cabinet_base_plate"/>
     <parent link="world"/>
-    <origin rpy="0 0 0" xyz="3.0 0.75 0"/>
+    <origin rpy="0 0 1.5708" xyz="3.0 0.75 0"/>
   </joint>
 
-  <!-- <joint name="hopper_long_to_world" type="fixed">
+
+  <joint name="hopper_long_to_cage" type="fixed">
     <child link="hopper_long_base_plate"/>
-    <parent link="world"/>
-    <origin rpy="0 0 0" xyz="-0.5 1.5 0"/>
-  </joint> -->
-  <joint name="hopper_long_to_walls" type="fixed">
-    <child link="hopper_long_base_plate"/>
-    <parent link="testbed_walls"/>
+    <parent link="cage_base_link"/>
     <origin rpy="0 0 0" xyz="1.0 2.2 0"/>  <!-- x= 0.678, y= 67 inch = 1.7018 m -->
     
   </joint>
 
-  <!-- <joint name="hopper_short_to_world" type="fixed">
-    <child link="hopper_short_base_plate"/>
-    <parent link="world"/>
-    <origin rpy="0 0 0" xyz="-0.5 2.5 0"/>
-  </joint> -->
   <joint name="hopper_short_to_hopper_long" type="fixed">
     <child link="hopper_short_base_plate"/>
     <parent link="hopper_long_base_plate"/>
