@@ -52,4 +52,4 @@ src/CMakeLists.txt
 
 *.DS_Store
 .vscode/
-src/fanuc/
+src/testbed/fanuc/
