@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<xacro:macro  name="base_link_geometry" params="geometry_type:=collision">
+<xacro:element xacro:name="${geometry_type}">
+<origin rpy="0 0 0"  xyz="-.124 0 .12" />
+<geometry><box size="1.016 .729 .24" /></geometry>
+</xacro:element>
+</xacro:macro>
+</robot>

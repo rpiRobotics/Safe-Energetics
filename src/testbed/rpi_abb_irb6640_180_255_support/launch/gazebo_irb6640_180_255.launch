@@ -1,0 +1,6 @@
+<launch>
+  <include file="$(find gazebo_ros)/launch/empty_world.launch" />
+  <param name="abb_irb6640_180_255_description" command="$(find xacro)/xacro.py $(find rpi_abb_irb6640_180_255_support)/urdf/irb6640_180_255.xacro" />
+  <node pkg="gazebo_ros" name="spawn_irb6640" type="spawn_model"
+   args="-model irb6640 -urdf -param abb_irb6640_180_255_description"  />
+</launch>

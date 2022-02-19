@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro  name="testbed_walls_geometry" params="geometry_type:=collision">
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} 0 0" xyz="2.019 .022 1.219" />
+            <geometry><box size="4.14 2.438 .145" /></geometry>
+        </xacro:element>
+
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} 0 ${radians(180)}" xyz="3.264 4.83 1.219" />
+            <geometry><box size="6.629 2.438 .195" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} ${radians(90)} ${radians(90)}" xyz=".022 2.438 1.219" />
+            <geometry><box size="2.438 4.978 .145" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="0 0 0" xyz="3.264 1.714 2.423" />
+            <geometry><box size="6.629 6.428 .03" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(-90)} ${radians(-90)} ${radians(90)}" xyz="6.551 1.714 1.219" />
+            <geometry><box size="2.438 6.428 .056" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} 0 0" xyz="5.306 -1.5 1.219" />
+            <geometry><box size="2.545 2.438 .001" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} 0 ${radians(90)}" xyz="4.062 -.703 1.219" />
+            <geometry><box size="1.594 2.438 .056" /></geometry>
+        </xacro:element>
+        
+        <xacro:element xacro:name="${geometry_type}">
+            <origin rpy="${radians(90)} 0 0" xyz="5.306 .022 2.134" />
+            <geometry><box size="2.545 .61 .145" /></geometry>
+        </xacro:element>
+    </xacro:macro>
+</robot>

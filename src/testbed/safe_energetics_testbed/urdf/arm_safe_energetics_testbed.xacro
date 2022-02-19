@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<robot name="arm_safe_energetics_testbed" xmlns:xacro="http://ros.org/wiki/xacro">  
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/irb6640_180_255.xacro"/>
+
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/m710ic45m.xacro"/>
+
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/testbed_walls_macro.xacro"/>
+
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/cabinet.xacro"/>
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/hopper_long.xacro"/>
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/hopper_short.xacro"/>
+
+  <xacro:testbed_walls prefix=""/>
+
+  <link name="world"/>
+
+  <link name="floor">
+    <visual name="visual">      
+      <origin xyz="1 0 -.005"/>
+      <geometry><box size="8 8 0.01"/></geometry>
+      <material name="grey"/>
+    </visual>
+    <collision name="collision">      
+      <origin xyz="1 0 -.005"/>
+      <geometry><box size="8 8 0.01"/></geometry>
+    </collision>
+  </link>
+
+  <!-- <link name="overhead_camera"/> -->
+
+
+  <joint name="abb_robot_to_world" type="fixed">
+    <child link="abb_base_plate"/>
+    <parent link="world"/>
+    <origin rpy="0 0 0" xyz="0 0 0"/>
+  </joint>
+
+  <joint name="fanuc_robot_to_world" type="fixed">
+    <child link="fanuc_base_plate"/>
+    <parent link="world"/>
+    <origin rpy="0 0 0" xyz="1.5 0.75 0"/>
+  </joint>
+
+  <joint name="walls_to_world" type="fixed">
+    <parent link="world"/>
+    <child link="testbed_walls"/>
+    <origin rpy="0 0 -1.57079" xyz="-1.282 3.271 0"/>
+  </joint>
+
+
+  <joint name="floor_to_world" type="fixed">
+    <parent link="world"/>
+    <child link="floor"/>
+  </joint>
+
+  <!-- <joint name="overhead_camera_to_world" type="floating">
+    <parent link="world"/>
+    <child link="overhead_camera"/>
+
+    <origin rpy="-3.0901665893944226 0.020179445742952443 0.05637854407723496" xyz="0.22644675 -2.46050185  3.44552755"/>
+  </joint> -->
+
+  <joint name="cabinet_to_world" type="fixed">
+    <child link="cabinet_base_plate"/>
+    <parent link="world"/>
+    <origin rpy="0 0 0" xyz="3.0 0.75 0"/>
+  </joint>
+
+  <!-- <joint name="hopper_long_to_world" type="fixed">
+    <child link="hopper_long_base_plate"/>
+    <parent link="world"/>
+    <origin rpy="0 0 0" xyz="-0.5 1.5 0"/>
+  </joint> -->
+  <joint name="hopper_long_to_walls" type="fixed">
+    <child link="hopper_long_base_plate"/>
+    <parent link="testbed_walls"/>
+    <origin rpy="0 0 0" xyz="1.0 2.2 0"/>  <!-- x= 0.678, y= 67 inch = 1.7018 m -->
+    
+  </joint>
+
+  <!-- <joint name="hopper_short_to_world" type="fixed">
+    <child link="hopper_short_base_plate"/>
+    <parent link="world"/>
+    <origin rpy="0 0 0" xyz="-0.5 2.5 0"/>
+  </joint> -->
+  <joint name="hopper_short_to_hopper_long" type="fixed">
+    <child link="hopper_short_base_plate"/>
+    <parent link="hopper_long_base_plate"/>
+    <origin rpy="0 0 0" xyz="0 1.1811 0"/> <!-- 46.5in =  1.1811 m  -->
+  </joint>
+  
+
+
+</robot>

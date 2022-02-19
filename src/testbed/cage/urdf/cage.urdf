@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="cage">
+  <link
+    name="cage_base_link">
+    <inertial>
+      <origin
+        xyz="3.0015 2.476 1.3447"
+        rpy="0 0 0" />
+      <mass
+        value="942.79" />
+      <inertia
+        ixx="4617.7"
+        ixy="87.441"
+        ixz="-245.38"
+        iyy="6702.9"
+        iyz="10.699"
+        izz="10272" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cage/meshes/cage_base_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 0.3" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://cage/meshes/cage_base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+</robot>

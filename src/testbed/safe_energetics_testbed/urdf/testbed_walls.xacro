@@ -1,0 +1,5 @@
+<?xml version="1.0" ?>
+<robot name="testbed_walls" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/testbed_walls_macro.xacro"/>
+  <xacro:testbed_walls prefix=""/>
+</robot>

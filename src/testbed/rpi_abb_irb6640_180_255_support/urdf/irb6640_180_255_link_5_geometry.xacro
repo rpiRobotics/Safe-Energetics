@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+<xacro:macro  name="link_5_geometry" params="geometry_type:=collision">
+<xacro:element xacro:name="${geometry_type}">
+<origin rpy="-.697 -1.571 .697"  xyz=".023 0 0" />
+<geometry><cylinder length=".307" radius=".107" /></geometry>
+</xacro:element>
+</xacro:macro>
+</robot>

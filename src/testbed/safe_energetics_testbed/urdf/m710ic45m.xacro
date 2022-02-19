@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<robot name="fanuc_m710ic45m" xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:include filename="$(find fanuc_m710ic_support)/urdf/m710ic45m_macro.xacro"/>
+  <xacro:fanuc_m710ic45m prefix="fanuc_"/>
+
+  <link name="fanuc_base_plate">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.0127"/>
+      <geometry>        
+        <box size="0.9144 0.9144 0.0254"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0127"/>
+      <geometry>        
+        <box size="0.9144 0.9144 0.0254"/>
+      </geometry>     
+    </collision>
+  </link>
+
+  <joint name="fanuc_base_plate" type="fixed">
+    <parent link="fanuc_base_plate"/>
+    <child link="fanuc_base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 .0254"/>
+  </joint>
+</robot>

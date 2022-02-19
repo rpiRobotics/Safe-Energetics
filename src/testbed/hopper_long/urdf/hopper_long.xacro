@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<robot name="hopper_long" xmlns:xacro="http://wiki.ros.org/xacro">
+  <xacro:include filename="$(find hopper_long)/urdf/hopper_long_macro.xacro"/>
+  <xacro:hopper_long prefix=""/>
+</robot>

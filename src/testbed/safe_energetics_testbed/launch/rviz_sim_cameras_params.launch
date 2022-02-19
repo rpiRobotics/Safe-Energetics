@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- Overhead Camera -->
+  <node pkg="tf" type="static_transform_publisher" name="overhead_camera_transform_publisher" args="0.22644675 -2.46050185  3.44552755 0.99922873 0.02791549 -0.01080683 -0.02541439 world overhead_camera 100" />
+
+  <node pkg="rostopic" type="rostopic" name="overhead_camera_info" args="pub -f $(find safe_energetics_testbed)/config/overhead_camera_sim_camera_info.yaml -l /overhead_camera/camera_info sensor_msgs/CameraInfo" output="screen"/>
+
+  <!-- Gripper Camera 1 -->
+
+  <node pkg="tf" type="static_transform_publisher" name="gripper_camera_1_transform_publisher" args="-0.1991 1.15 -0.5807 0 0 1 0 vacuum_gripper_tool gripper_camera_1 100" />
+
+  <node pkg="rostopic" type="rostopic" name="gripper_camera_1_camera_info" args="pub -f $(find safe_energetics_testbed)/config/gripper_camera_1_sim_camera_info.yaml -l /gripper_camera_1/camera_info sensor_msgs/CameraInfo" output="screen"/>
+
+  <!-- Gripper Camera 2 -->
+  <node pkg="tf" type="static_transform_publisher" name="gripper_camera_2_transform_publisher" args="0.0188 1.15 -0.6416 0 0 1 0 vacuum_gripper_tool gripper_camera_2 100" />
+
+  <node pkg="rostopic" type="rostopic" name="gripper_camera_2_camera_info" args="pub -f $(find safe_energetics_testbed)/config/gripper_camera_2_sim_camera_info.yaml -l /gripper_camera_2/camera_info sensor_msgs/CameraInfo" output="screen"/>
+
+</launch>
+
