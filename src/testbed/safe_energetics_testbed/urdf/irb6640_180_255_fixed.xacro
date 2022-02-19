@@ -1,0 +1,30 @@
+<?xml version="1.0" ?>
+<robot name="abb_irb6640_180_255" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find rpi_abb_irb6640_180_255_support)/urdf/irb6640_180_255_fixed_macro.xacro"/>
+  <xacro:abb_irb6640_180_255 prefix="abb_"/>
+  
+  
+  <link name="abb_base_plate">
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0.0127"/>
+      <geometry>        
+        <box size="0.9144 0.9144 0.0254"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0.0127"/>
+      <geometry>        
+        <box size="0.9144 0.9144 0.0254"/>
+      </geometry>     
+    </collision>
+  </link>
+
+  <joint name="abb_base_plate" type="fixed">
+    <parent link="abb_base_plate"/>
+    <child link="abb_base_link"/>
+    <origin rpy="0 0 0" xyz="0 0 .0254"/>
+  </joint>
+
+</robot>
+
