@@ -1,0 +1,13 @@
+controller_list:
+  - name: fake_fanuc_cage_arm_controller
+    type: $(arg fake_execution_type)
+    joints:
+      - fanuc_joint_1
+      - fanuc_joint_2
+      - fanuc_joint_3
+      - fanuc_joint_4
+      - fanuc_joint_5
+      - fanuc_joint_6
+initial:  # Define initial robot poses.
+  - group: fanuc_cage_arm
+    pose: home
