@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 export ROS_WS=/home/oarbot_blue/catkin_ws_safe_energetics
 export ROS_MELODIC=/opt/ros/melodic
 source $ROS_MELODIC/setup.bash
