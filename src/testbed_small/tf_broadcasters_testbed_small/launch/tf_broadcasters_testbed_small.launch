@@ -19,7 +19,7 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="tf_testbed_aruco_tag_testbed_origin_broadcaster" args="0.0 0. 0.0      0. 0. 0. 1. testbed_aruco_tag testbed_origin" />
 
     <!-- Launch TF broadcaster btw Testbed origin and the Pouring Point -->
-    <node name="tf_testbed_origin_pouring_point_broadcaster" pkg="tf_broadcasters" type="tf_testbed_origin_pouring_point_broadcaster.py" output="screen">
+    <node name="tf_testbed_origin_pouring_point_broadcaster" pkg="tf_broadcasters_testbed_small" type="tf_testbed_origin_pouring_point_broadcaster.py" output="screen">
         <rosparam file="$(find tf_broadcasters_testbed_small)/config/oarbot_blue_tf_testbed_origin_pouring_point_broadcaster.yaml"/>
     </node>
 

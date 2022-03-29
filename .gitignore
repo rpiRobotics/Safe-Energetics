@@ -53,3 +53,4 @@ src/CMakeLists.txt
 *.DS_Store
 .vscode/
 src/testbed/fanuc/
+src/testbed_small/kinova-ros/
