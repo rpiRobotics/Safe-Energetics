@@ -19,5 +19,5 @@ plate_angles: [15., 30., 45., 60., 75.] # deg
 plate_tip_heights: [0.153, 0,215, 0.308, 0.376, 0.394] # m
 
 # During the tests, adjust these for different experiments
-desired_pouring_height: 0.05 # m
+desired_pouring_height: 0.15 # m
 plate_selection_index: 4  # which config is chosen above [0,1,2,3,4]
