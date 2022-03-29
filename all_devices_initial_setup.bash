@@ -30,10 +30,10 @@ SCRIPTS=(
     # be sure to change 'melodic' to whichever ROS release you are using
     rosdep install --from-paths src/testbed/ --ignore-src --rosdistro melodic
 
-    cd src;
+    cd src/testbed_small;
     git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
 
-    cd ..;
+    cd ../..;
     ##############
     source /opt/ros/melodic/setup.bash;
     # catkin_make -DCATKIN_BLACKLIST_PACKAGES='...';
@@ -70,10 +70,10 @@ SCRIPTS=(
     # be sure to change 'melodic' to whichever ROS release you are using
     rosdep install --from-paths src/testbed/ --ignore-src --rosdistro melodic
 
-    cd src;
+    cd src/testbed_small;
     git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
 
-    cd ..;
+    cd ../..;
     ##############
     source /opt/ros/melodic/setup.bash;
     # catkin_make -DCATKIN_BLACKLIST_PACKAGES='...';
