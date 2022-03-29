@@ -53,10 +53,10 @@ class TestbedOrigin2Pouring_point_Tf():
         self.publish_tf_static()
 
     def calculate_position(self):
-        self.position[0] = self.plate_tip_position['x'] - self.pouring_offset_position['x']
-        self.position[1] = self.plate_tip_position['y'] - self.pouring_offset_position['y']
+        self.position[0] = self.plate_tip_position['x'] + self.pouring_offset_position['x']
+        self.position[1] = self.plate_tip_position['y'] + self.pouring_offset_position['y']
 
-        offset = ((self.position[0])**2 + (self.position[1])**2)**0.5
+        offset = ((self.pouring_offset_position['x'])**2 + (self.pouring_offset_position['y'])**2)**0.5
         theta = np.deg2rad(self.plate_angles[self.plate_selection_index])
         h_plate = self.plate_tip_heights[self.plate_selection_index]
         self.position[2] = h_plate - offset*math.tan(theta) + self.desired_pouring_height
