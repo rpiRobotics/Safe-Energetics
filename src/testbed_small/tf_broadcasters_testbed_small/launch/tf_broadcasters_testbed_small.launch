@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>   
+<group ns="oarbot_blue">
+    <machine name="oarbot-blue-P15" address="192.168.1.102" env-loader="/home/oarbot_blue/catkin_ws_safe_energetics/src/testbed_small/scripts/env_oarbot_blue.sh" user="oarbot_blue" password="1234"  default="true"/>
+
+    <!-- Launch TF broadcaster btw Oarbot blue aruco tag and the TestBed aruco tag -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_aruco_tag_testbed_aruco_tag_broadcaster" args="0.720 -0.515 0.040      0 0 0 1 oarbot_blue_aruco_tag testbed_aruco_tag" />
+
+    <!-- Launch TF broadcaster btw Oarbot blue aruco tag and the Oarbot Mobile base -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_aruco_tag_oarbot_base_broadcaster" args="0.228 0.003 -0.845      0 0 0 1 oarbot_blue_aruco_tag oarbot_blue_base" />
+
+    <!-- Launch TF broadcaster btw the Oarbot Mobile base to Kinova Arm base -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_base_arm_base_broadcaster" args="0.305 -0.003 0.804      0 0 0 1 oarbot_blue_base root_right_arm" />
+
+    <!-- Launch TF broadcaster btw the Kinova Arm End Effector to Pouring Box Tip -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_end_effector_pouring_box_broadcaster" args="0.055 0.129 -0.006      0.5 0.5 0.5 -0.5 j2n6s300_right_end_effector pouring_box_tip" />
+
+    <!-- Launch TF broadcaster btw the testbed_aruco_tag to testbed_origin -->
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_testbed_aruco_tag_testbed_origin_broadcaster" args="0.0 0. 0.0      0. 0. 0. 1. testbed_aruco_tag testbed_origin" />
+
+    <!-- Launch TF broadcaster btw Testbed origin and the Pouring Point -->
+    <node name="tf_testbed_origin_pouring_point_broadcaster" pkg="tf_broadcasters" type="tf_testbed_origin_pouring_point_broadcaster.py" output="screen">
+        <rosparam file="$(find tf_broadcasters_testbed_small)/config/oarbot_blue_tf_testbed_origin_pouring_point_broadcaster.yaml"/>
+    </node>
+
+</group>
+</launch>

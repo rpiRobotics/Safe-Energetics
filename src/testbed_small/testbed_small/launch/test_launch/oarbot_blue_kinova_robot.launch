@@ -1,0 +1,58 @@
+<launch>
+
+  <arg name="use_urdf" default="true"/>
+  <arg name="kinova_robotType" default="j2n6s300" />
+  <arg name="kinova_robotName" default="$(arg kinova_robotType)"/>
+	<arg name="kinova_robotSerial" default="not_set" />
+	<arg name="kinova_root_name" default="root_right_arm" />
+  <arg name="kinova_prefix" default="j2n6s300_right" />
+  <arg name="use_jaco_v1_fingers" default="false" />
+	<arg name="feedback_publish_rate" default="0.01" /> <!-- (0.01 s = 100 Hz) Higher rate is practically not possible -->
+  
+
+  <node name="$(arg kinova_robotName)_driver" pkg="kinova_driver" type="kinova_arm_driver" output="screen" cwd="node" args="$(arg kinova_robotType)">
+    <rosparam file="$(find testbed_small)/config/oarbot_blue_kinova_robot_parameters.yaml" command="load" />
+    <param name="serial_number" value="$(arg kinova_robotSerial)" />   
+    <param name="robot_name" value="$(arg kinova_robotName)" />   
+    <param name="robot_type" value="$(arg kinova_robotType)" />   
+    <param name="use_jaco_v1_fingers" value="$(arg use_jaco_v1_fingers)" />   
+    <param name="status_interval_seconds" value="$(arg feedback_publish_rate)" />
+  </node>
+    
+  <group unless="$(arg use_urdf)">
+    <node name="$(arg kinova_robotName)_tf_updater" pkg="kinova_driver" type="kinova_tf_updater" output="screen" cwd="node" args="$(arg kinova_robotType)">
+      <remap from="/$(arg kinova_robotName)_tf_updater/in/joint_angles" to="$(arg kinova_robotName)_driver/out/joint_angles"/>
+      <param name="base_frame" value="root"/>
+    </node>
+  </group>
+
+  <group if="$(arg use_urdf)">
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find testbed_small)/urdf/oarbot_blue_$(arg kinova_robotType)_standalone.xacro'
+      robot_root_name:=$(arg kinova_root_name)
+      robot_prefix:=$(arg kinova_prefix)" />
+    <node name="$(arg kinova_robotName)_state_publisher"
+           pkg="robot_state_publisher"
+          type="robot_state_publisher">
+      <param name="publish_frequency" value="200" /> <!-- (0.01 s = 100 Hz) Higher rate is practically not possible -->
+      <remap from="joint_states" to="$(arg kinova_robotName)_driver/out/joint_state"/>
+    </node>
+  </group>
+
+  <node name="$(arg kinova_robotName)_helper_publisher" pkg="kinova_helper" type="helper_publisher.py" output="screen" cwd="node">
+    <param name="robot_name" value="$(arg kinova_robotName)" />
+    <param name="min_singular_value_topic_name" value="$(arg kinova_robotName)_driver/out/min_singular_value" />
+    <param name="min_singular_value_thres" value="0.08" /> <!-- to show a warning only -->
+    <remap from="out_custom/tool_wrench" to="$(arg kinova_robotName)_driver/out/tool_wrench"/>
+    <remap from="out_custom/tool_pose" to="$(arg kinova_robotName)_driver/out/tool_pose"/>
+  </node>
+
+  <node name="$(arg kinova_robotName)_wrench_filter" pkg="kinova_helper" type="wrench_filter.py" output="screen" cwd="node">
+    <param name="tool_wrench_topic_name_out" value="$(arg kinova_robotName)_driver/out/tool_wrench_filtered" />
+    <param name="tool_wrench_topic_name_in" value="$(arg kinova_robotName)_driver/out/tool_wrench" />
+    
+    <param name="wrench_filter_factor" value="0.1" />
+    <param name="force_dead_zone_thres" value="15.0" />
+    <param name="torque_dead_zone_thres" value="2.0" />
+  </node>
+
+</launch>
