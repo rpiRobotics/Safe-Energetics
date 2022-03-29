@@ -72,10 +72,10 @@ class TestbedOrigin2Pouring_point_Tf():
         t.transform.translation.y = self.position[1]
         t.transform.translation.z = self.position[2]
         
-        t.transform.rotation.x = self.plate_orientation[0]
-        t.transform.rotation.y = self.plate_orientation[1]
-        t.transform.rotation.z = self.plate_orientation[2]
-        t.transform.rotation.w = self.plate_orientation[3]
+        t.transform.rotation.x = self.plate_orientation['x']
+        t.transform.rotation.y = self.plate_orientation['y']
+        t.transform.rotation.z = self.plate_orientation['z']
+        t.transform.rotation.w = self.plate_orientation['w']
 
         self.tf_broadcaster_static.sendTransform(t)
 
