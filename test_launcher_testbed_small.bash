@@ -7,5 +7,7 @@ gnome-terminal --tab --title="KINOVA 1" --command "bash -c \"source ~/.bashrc; r
 
 gnome-terminal --tab --title="TFs" --command "bash -c \"source ~/.bashrc; roslaunch tf_broadcasters_testbed_small tf_broadcasters_testbed_small.launch; exec bash\"";
 
-# sleep 3s;
+sleep 3s;
+
 # gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/catkin_ws_safe_energetics/src/testbed_small/config/rviz/testbed_small.rviz; exec bash\"";
+gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/testbed_small.rviz; exec bash\"";
