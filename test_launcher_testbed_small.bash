@@ -13,4 +13,4 @@ gnome-terminal --tab --title="KINOVA MOVEIT" --command "bash -c \"source ~/.bash
 sleep 3s;
 
 # gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/catkin_ws_safe_energetics/src/testbed_small/config/rviz/testbed_small.rviz; exec bash\"";
-gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/testbed_small.rviz; exec bash\"";
+# gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/testbed_small.rviz; exec bash\"";
