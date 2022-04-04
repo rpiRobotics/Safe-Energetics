@@ -11,6 +11,7 @@ SCRIPTS=(
     echo 1234 | sudo -S apt install -y curl;
     echo 1234 | sudo -S apt install -y software-properties-common;
     echo 1234 | sudo -S apt install -y ros-melodic-moveit*
+    echo 1234 | sudo -S apt install -y ros-melodic-trac-ik
     echo 1234 | sudo -S apt install -y python3-pip;
     echo 1234 | sudo -S apt install -y python-pip;
     echo 1234 | sudo wget https://raw.githubusercontent.com/Kinovarobotics/kinova-ros/melodic-devel/kinova_driver/udev/10-kinova-arm.rules;
@@ -51,6 +52,7 @@ SCRIPTS=(
     echo 1234 | sudo -S apt install -y curl;
     echo 1234 | sudo -S apt install -y software-properties-common;
     echo 1234 | sudo -S apt install -y ros-melodic-moveit*
+    echo 1234 | sudo -S apt install -y ros-melodic-trac-ik
     echo 1234 | sudo -S apt install -y python3-pip;
     echo 1234 | sudo -S apt install -y python-pip;
     echo 1234 | sudo wget https://raw.githubusercontent.com/Kinovarobotics/kinova-ros/melodic-devel/kinova_driver/udev/10-kinova-arm.rules;
