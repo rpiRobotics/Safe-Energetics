@@ -10,10 +10,10 @@
     <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_aruco_tag_oarbot_base_broadcaster" args="0.228 0.003 -0.845      0 0 0 1 oarbot_blue_aruco_tag oarbot_blue_base" />
 
     <!-- Launch TF broadcaster btw the Oarbot Mobile base to Kinova Arm base -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_base_arm_base_broadcaster" args="0.305 -0.003 0.804      0 0 0 1 oarbot_blue_base root_right_arm" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_oarbot_base_arm_base_broadcaster" args="0.305 -0.003 0.804      0 0 0 1 oarbot_blue_base root" />
 
     <!-- Launch TF broadcaster btw the Kinova Arm End Effector to Pouring Box Tip -->
-    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_end_effector_pouring_box_broadcaster" args="0.055 0.129 -0.006      0.5 0.5 0.5 -0.5 j2n6s300_right_end_effector pouring_box_tip" />
+    <node pkg="tf2_ros" type="static_transform_publisher" name="tf_end_effector_pouring_box_broadcaster" args="0.055 0.129 -0.006      0.5 0.5 0.5 -0.5 j2n6s300_end_effector pouring_box_tip" />
 
     <!-- Launch TF broadcaster btw the testbed_aruco_tag to testbed_origin -->
     <node pkg="tf2_ros" type="static_transform_publisher" name="tf_testbed_aruco_tag_testbed_origin_broadcaster" args="0.0 0. 0.0      0. 0. 0. 1. testbed_aruco_tag testbed_origin" />

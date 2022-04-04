@@ -5,7 +5,7 @@ sleep 1s;
 # sleep 4s;
 gnome-terminal --tab --title="KINOVA 1" --command "bash -c \"source ~/.bashrc; roslaunch kinova_bringup kinova_robot.launch; exec bash\"";
 
-# gnome-terminal --tab --title="TFs" --command "bash -c \"source ~/.bashrc; roslaunch tf_broadcasters_testbed_small tf_broadcasters_testbed_small.launch; exec bash\"";
+gnome-terminal --tab --title="TFs" --command "bash -c \"source ~/.bashrc; roslaunch tf_broadcasters_testbed_small tf_broadcasters_testbed_small.launch; exec bash\"";
 
 # sleep 3s;
 # gnome-terminal --tab --title="RVIZ" --command "bash -c \"source ~/.bashrc; rosrun rviz rviz -d ~/catkin_ws_safe_energetics/src/testbed_small/config/rviz/testbed_small.rviz; exec bash\"";
