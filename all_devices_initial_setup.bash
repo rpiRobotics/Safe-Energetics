@@ -32,7 +32,8 @@ SCRIPTS=(
     rosdep install --from-paths src/testbed/ --ignore-src --rosdistro melodic
 
     cd src/testbed_small;
-    git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
+    # git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
+    git clone https://github.com/Kinovarobotics/kinova-ros.git kinova-ros;
 
     cd ../..;
     ##############
@@ -73,7 +74,8 @@ SCRIPTS=(
     rosdep install --from-paths src/testbed/ --ignore-src --rosdistro melodic
 
     cd src/testbed_small;
-    git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
+    # git clone https://github.com/burakaksoy/kinova-ros.git kinova-ros;
+    git clone https://github.com/Kinovarobotics/kinova-ros.git kinova-ros;
 
     cd ../..;
     ##############
