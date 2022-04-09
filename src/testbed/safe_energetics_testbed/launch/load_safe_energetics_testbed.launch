@@ -1,3 +1,0 @@
-<launch>
-  <param name="robot_description" command="$(find xacro)/xacro.py '$(find safe_energetics_testbed)/urdf/safe_energetics_testbed.xacro'" />
-</launch>

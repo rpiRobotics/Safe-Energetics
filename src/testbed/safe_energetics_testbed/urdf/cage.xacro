@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<robot name="cage" xmlns:xacro="http://wiki.ros.org/xacro">
-  <xacro:include filename="$(find cage)/urdf/cage_macro.xacro"/>
-  <xacro:cage prefix=""/>
-</robot>

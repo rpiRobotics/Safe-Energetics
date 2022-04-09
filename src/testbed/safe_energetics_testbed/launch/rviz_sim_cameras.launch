@@ -1,4 +1,0 @@
-<launch>  
-  <param name="use_gui" value="true" />  
-  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find safe_energetics_testbed)/launch/rviz_sim_cameras.rviz" required="true" />  
-</launch>

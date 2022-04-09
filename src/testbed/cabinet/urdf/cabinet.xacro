@@ -1,5 +1,0 @@
-<?xml version="1.0"?>
-<robot name="cabinet" xmlns:xacro="http://wiki.ros.org/xacro">
-  <xacro:include filename="$(find cabinet)/urdf/cabinet_macro.xacro"/>
-  <xacro:cabinet prefix=""/>
-</robot>
