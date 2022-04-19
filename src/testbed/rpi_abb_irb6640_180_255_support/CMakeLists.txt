@@ -148,7 +148,12 @@ include_directories(
 #   ${catkin_LIBRARIES}
 # )
 
-xacro_add_files(urdf/irb6640_180_255.xacro OUTPUT urdf/irb6640_180_255.urdf INORDER INSTALL)
+# xacro_add_files(urdf/irb6640_180_255.xacro OUTPUT urdf/irb6640_180_255.urdf INORDER INSTALL)
+foreach(dir config launch meshes urdf)
+	install(DIRECTORY ${dir}/
+		DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
+endforeach(dir)
+
 
 
 

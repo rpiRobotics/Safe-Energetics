@@ -1,5 +1,6 @@
 <?xml version="1.0" ?>
 <robot name="abb_irb6640_180_255" xmlns:xacro="http://ros.org/wiki/xacro">
+  <xacro:include filename="$(find fanuc_m20id35_support)/urdf/fanuc_common_materials.xacro"/>
   <xacro:include filename="$(find rpi_abb_irb6640_180_255_support)/urdf/irb6640_180_255_macro.xacro"/>
   <xacro:abb_irb6640_180_255 prefix="abb_"/>
 
@@ -10,7 +11,7 @@
       <geometry>        
         <box size="0.9144 0.9144 0.0254"/>
       </geometry>
-      <material name="grey"/>
+      <xacro:material_fanuc_grey />
     </visual>
     <collision>
       <origin rpy="0 0 0" xyz="0 0 0.0127"/>

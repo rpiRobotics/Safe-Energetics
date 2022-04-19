@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
-<robot name="safe_energetics_testbed" xmlns:xacro="http://ros.org/wiki/xacro">  
+<robot name="safe_energetics_testbed" xmlns:xacro="http://ros.org/wiki/xacro"> 
+  <xacro:include filename="$(find fanuc_m20id35_support)/urdf/fanuc_common_materials.xacro"/>
+
   <!-- <xacro:include filename="$(find safe_energetics_testbed)/urdf/irb6640_180_255.xacro"/> -->
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/irb6640_180_255_fixed.xacro"/>
 
 
-  <xacro:include filename="$(find safe_energetics_testbed)/urdf/m710ic45m.xacro"/>
+  <!-- <xacro:include filename="$(find safe_energetics_testbed)/urdf/m710ic45m.xacro"/> -->
+  <xacro:include filename="$(find safe_energetics_testbed)/urdf/m20id35.xacro"/>
 
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/cage.xacro"/>
   <xacro:include filename="$(find safe_energetics_testbed)/urdf/cabinet.xacro"/>
@@ -17,7 +20,7 @@
     <visual name="visual">      
       <origin xyz="1 0 -.005"/>
       <geometry><box size="8 8 0.01"/></geometry>
-      <material name="grey"/>
+      <xacro:material_fanuc_grey />
     </visual>
     <collision name="collision">      
       <origin xyz="1 0 -.005"/>

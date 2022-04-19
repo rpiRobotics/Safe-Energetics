@@ -5,7 +5,7 @@ This is a repository for Safe Energetics Project
 
 ## Setting up the system
 
-Assuming you have ROS Melodic installed on Ubuntu 18.04,
+Assuming you have ROS Noetic installed on Ubuntu 20.04,
 
 Without cloning this repo by yourself, simply download and run
 ```
