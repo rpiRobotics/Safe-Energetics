@@ -1,6 +1,7 @@
 # Safe Energetics
 This is a repository for Safe Energetics Project
 
+### see other branch for the smaller testbed progress
 
 ## Setting up the system
 
