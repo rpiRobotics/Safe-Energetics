@@ -23,7 +23,7 @@ roslaunch safe_energetics_testbed test_safe_energetics_testbed.launch
 
 You will be able to adjust the joints of FANUC M20-iD/35 robot in the RPI testbed cage
 
-![test_simulation](/.readme_include/test_simulation.png)
+![test_simulation](/.readme_include/test_simulation2.png)
 
 ## Launching Test Simulation with MoveIt
 ## TODO
