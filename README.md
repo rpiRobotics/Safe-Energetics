@@ -11,7 +11,7 @@ Without cloning this repo by yourself, simply download and run
 ./initial_setup.bash
 ```
 
-It creates a folder named `catkin_ws_safe_energetics` in your home directory and builds the packages in this repo including the ROS-I FANUC support repo.
+It creates a folder named `catkin_ws_safe_energetics` in your home directory and builds the packages in this repo.
 
 ## Launching Test Simulation
 
@@ -20,11 +20,12 @@ Run
 roslaunch safe_energetics_testbed test_safe_energetics_testbed.launch
 ```
 
-You will be able to adjust the joints of FANUC M710-iC/45M robot in the RPI testbed cage
+You will be able to adjust the joints of FANUC M20-iD/35 robot in the RPI testbed cage
 
 ![test_simulation](/.readme_include/test_simulation.png)
 
 ## Launching Test Simulation with MoveIt
+## TODO
 Run
 ```
 roslaunch safe_energetics_testbed_moveit_config demo.launch
