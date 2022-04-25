@@ -1,0 +1,12 @@
+controller_list:
+  - name: fanuc_cage_arm_controller
+    action_ns: follow_joint_trajectory
+    type: FollowJointTrajectory
+    default: True
+    joints:
+      - fanuc_joint_1
+      - fanuc_joint_2
+      - fanuc_joint_3
+      - fanuc_joint_4
+      - fanuc_joint_5
+      - fanuc_joint_6

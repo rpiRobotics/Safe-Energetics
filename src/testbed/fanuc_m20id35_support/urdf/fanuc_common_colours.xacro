@@ -2,7 +2,7 @@
 <robot xmlns:xacro="http://wiki.ros.org/xacro">
 
   <!-- RAL 1021: Rape yellow -->
-  <xacro:property name="color_fanuc_yellow"   value="0.96 0.76 0.13 1.0" />
+  <xacro:property name="color_fanuc_yellow"   value="0.76 0.76 0.13 1.0" />
   <!-- RAL 9002: Grey white -->
   <xacro:property name="color_fanuc_white"    value="0.86 0.85 0.81 1.0" />
   <!-- RAL 7024: Graphite grey -->
