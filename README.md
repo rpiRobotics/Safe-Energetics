@@ -26,9 +26,9 @@ You will be able to adjust the joints of FANUC M20-iD/35 robot in the RPI testbe
 ![test_simulation](/.readme_include/test_simulation2.png)
 
 ## Launching Test Simulation with MoveIt
-## TODO
+
 Run
 ```
 roslaunch safe_energetics_testbed_moveit_config demo.launch
 ```
-![test_simulation_with_moveit](/.readme_include/test_simulation_with_moveit.png)
+![test_simulation_with_moveit](/.readme_include/test_simulation_with_moveit2.png)
