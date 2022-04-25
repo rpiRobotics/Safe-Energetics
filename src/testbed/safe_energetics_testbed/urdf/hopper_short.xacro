@@ -3,6 +3,21 @@
   <xacro:include filename="$(find hopper_short)/urdf/hopper_short_macro.xacro"/>
   <xacro:hopper_short prefix=""/>
 
+  <xacro:property name="h_offset" value="0.1" />
+  <xacro:property name="h_hopper" value="2.0828" /> <!-- 82 inch = 2.0828 m -->
+  <xacro:property name="r_hopper" value="0.25" /> 
+  <xacro:property name="theta" value="${-45.0/180.0*pi}" /> <!-- rotation around z axis angle (rad)  -->
+
+  <!-- Pouring point xyz -->
+  <xacro:property name="x_pouring_point" value="${r_hopper * cos(theta)}" /> 
+  <xacro:property name="y_pouring_point" value="${r_hopper * sin(theta)}" /> 
+  <xacro:property name="z_pouring_point" value="${h_hopper + h_offset}" /> 
+
+  <!-- Pouring point RPY -->
+  <xacro:property name="R_pouring_point" value="${90.0/180.0*pi}" /> 
+  <xacro:property name="P_pouring_point" value="${0.0/180.0*pi}" /> 
+  <xacro:property name="Y_pouring_point" value="${theta}" /> 
+
   <link name="hopper_short_base_plate">
     <!-- <visual>
       <origin rpy="0 0 0" xyz="0 0 0.0127"/>
@@ -19,6 +34,9 @@
     </collision> -->
   </link>
 
+  <link name="hopper_short_pouring_point">
+  </link>
+
   <joint name="hopper_short_base_plate" type="fixed">
     <parent link="hopper_short_base_plate"/>
     <child link="hopper_short_base_link"/>
@@ -26,4 +44,11 @@
     <!-- <origin rpy="1.5708 0 1.5708" xyz="0 0 0"/> -->
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
+
+  <joint name="hopper_short_pouring_point" type="fixed">
+    <parent link="hopper_short_base_link"/>
+    <child link="hopper_short_pouring_point"/>
+    <origin xyz="${x_pouring_point} ${y_pouring_point} ${z_pouring_point}" rpy="${R_pouring_point} ${P_pouring_point} ${Y_pouring_point}"/>
+  </joint>
+
 </robot>
