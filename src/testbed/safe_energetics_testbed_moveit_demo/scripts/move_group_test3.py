@@ -16,6 +16,7 @@ import rospy
 import tf2_ros
 import tf.transformations
 import tf_conversions
+import tf2_geometry_msgs
 
 import moveit_commander
 
@@ -28,7 +29,6 @@ from std_msgs.msg import String
 
 from math import pi, cos, sin, tan, fabs
 import numpy as np
-
 
 def all_close(goal, actual, tolerance):
   """
@@ -79,6 +79,15 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.group_name = "fanuc_cage_arm"
     self.move_group = moveit_commander.MoveGroupCommander(self.group_name)
 
+    # Define workspace limits
+    minX = -8.0
+    minY = -8.0
+    minZ = -4.0
+    maxX = 8.0
+    maxY = 8.0
+    maxZ = 4.0
+    self.move_group.set_workspace([minX, minY, minZ, maxX, maxY, maxZ])
+
     # self.move_group.set_planner_id("SBLkConfigDefault")
     # self.move_group.set_planner_id("ESTkConfigDefault")
     # self.move_group.set_planner_id("LBKPIECEkConfigDefault")
@@ -107,6 +116,12 @@ class MoveGroupPythonIntefaceTutorial(object):
     self.planning_frame = self.move_group.get_planning_frame()
     print ("============ Planning frame: %s" % self.planning_frame)
 
+    self.pose_reference_frame = self.move_group.get_pose_reference_frame()
+    print ("============ Pose Reference frame: %s" % self.pose_reference_frame)
+
+    current_pose = self.move_group.get_current_pose()
+    print ("============ current_pose: %s" % current_pose)
+
     # We can also print the name of the end-effector link for this group:
     self.eef_link = self.move_group.get_end_effector_link()
     print ("============ End effector link: %s" % self.eef_link)
@@ -117,8 +132,8 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     # Sometimes for debugging it is useful to print the entire state of the
     # robot:
-    print ("============ Printing robot state")
-    print (self.robot.get_current_state())
+    # print ("============ Printing robot state")
+    # print (self.robot.get_current_state())
 
     # print ("============ Printing Goal Tolerances")
     # self.print_tolerances()
@@ -127,38 +142,38 @@ class MoveGroupPythonIntefaceTutorial(object):
     
 
     # Misc variables
-    self.ground_name = "ground_plane"
-    self.block1_name = "block1"
-    self.block2_name = "block2"
-    self.ramp_name = "ramp"
-    self.desired_pouring_height =  0.15
-    self.pouring_offset_y = 0.05
-
-    self.cylinder_name = "cylinder"
-    self.pouring_box_tip_name = "pouring_box_tipp"
     self.keep_orient = True
     self.keep_position = True
+
+    self.home_pose = None
 
     self.plan = None # main plan from home to pouring point
     self.plan2 = None # plan for rotation of the pouring box
     self.plan3 = None # plan for rotation of the pouring box (reverse)
     self.rot_angle = 90.0 # deg , angle for amount of robot motion during pouring
     
-    self.ramp_angle = 75.0 # deg # choose one: 15. 30. 45. 60. 75. 
-
 
     # TF2 listener
     self.tfBuffer = tf2_ros.Buffer()
     self.tfListener = tf2_ros.TransformListener(self.tfBuffer)
 
+    self.pouring_box_tip_name = "fanuc_pouring_box_tip"
+    self.pouring_box_bottom_name = "fanuc_pouring_box_bottom"
+
     self.tf_hopper_long_pouringpoint_frame_name = "hopper_long_pouring_point"
     self.tf_hopper_short_pouringpoint_frame_name = "hopper_short_pouring_point"
-    
-    self.tf_pouringboxtip_frame_name = "pouring_box_tip"
-    self.tf_testbedorigin_frame_name = "testbed_origin"
 
+    self.tf_cabinet_pickpoint_frame_name_l1p1 = "cabinet_picking_level_1_point_1" # 1
+    self.tf_cabinet_pickpoint_frame_name_l1p2 = "cabinet_picking_level_1_point_2" # 2
+    self.tf_cabinet_pickpoint_frame_name_l2p1 = "cabinet_picking_level_2_point_1" # 3
+    self.tf_cabinet_pickpoint_frame_name_l2p2 = "cabinet_picking_level_2_point_2" # 4
 
-    self.T_world2pouringpoint = None # fixed
+    self.cylinder_name_l1p1 = "cylinder1"
+    self.cylinder_name_l1p2 = "cylinder2"
+    self.cylinder_name_l2p1 = "cylinder3"
+    self.cylinder_name_l2p2 = "cylinder4"
+
+    self.T_world2pouringpoint_long = None # fixed
     self.T_world2pouringboxtip = None # not fixed
     self.T_pouringboxtip2eef = None # fixed
     # self.T_pouringboxtip2pouringpoint = None
@@ -196,6 +211,8 @@ class MoveGroupPythonIntefaceTutorial(object):
   def go_to_joint_state(self):
     ## Planning to a Joint Goal
     ## ^^^^^^^^^^^^^^^^^^^^^^^^
+    self.move_group.set_start_state_to_current_state()
+
     ## the first thing we want to do is move it to a slightly better configuration.
     # We can get the joint values from the group and adjust some of the values:
     initial_angles = np.array([-10, -10, 10, -10, -10, -10]) # deg
@@ -223,6 +240,8 @@ class MoveGroupPythonIntefaceTutorial(object):
   def go_to_joint_state_zeros(self):
     ## Planning to a Joint Goal
     ## ^^^^^^^^^^^^^^^^^^^^^^^^
+    self.move_group.set_start_state_to_current_state()
+
     ## the first thing we want to do is move it to a slightly better configuration.
     # We can get the joint values from the group and adjust some of the values:
     initial_angles = np.array([0, 0, 0, 0, 0, 0]) # deg
@@ -245,53 +264,56 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     # For testing:
     current_joints = self.move_group.get_current_joint_values()
+
+    # Set the home pose ot reach later with constraints
+    self.home_pose = self.move_group.get_current_pose()
+
+    print("Home pose: " + str(self.home_pose))
     return all_close(joint_goal, current_joints, 0.01)
 
 
-  def go_to_pose_goal(self):
+  def go_to_tf_pose_goal(self, tf_goal_frame_name, eef_frame_name, is_goal_home=False):
     self.keep_orient = True
-    self.keep_position = True
     ## Planning to a Pose Goal
     ## ^^^^^^^^^^^^^^^^^^^^^^^
     # It is always good to clear your targets after planning with poses.
     # Note: there is no equivalent function for clear_joint_value_targets()
     self.move_group.clear_pose_targets()
 
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-    # self.move_group.set_end_effector_link(self.cylinder_name + "/" + self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.eef_link + "/" + self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.eef_link + "/" + self.cylinder_name)
-    # self.move_group.set_end_effector_link(self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.cylinder_name)
-
 
     ## We can plan a motion for this group to a desired pose for the
     ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
+    if is_goal_home:
+      # Let's set the end effector frame different than the default one
+      self.move_group.set_end_effector_link(self.eef_link)
+      pose_goal_stamped = self.home_pose # in default planning frame (ie. world)
+      starting_frame = tf_goal_frame_name
+      pose_goal_stamped = self.transform_pose(pose_goal_stamped, starting_frame) # in user specified starting frame
 
-    current_position = self.move_group.get_current_pose().pose.position
+      pose_goal = pose_goal_stamped.pose
+      
+    else:
+      # Let's set the end effector frame different than the default one
+      # self.move_group.set_end_effector_link(self.eef_link)
+      # self.move_group.set_end_effector_link(self.cylinder_name + "/" + self.pouring_box_tip_name)
+      self.move_group.set_end_effector_link(eef_frame_name)
 
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    Rgoal = np.dot(R0,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
+      pose_goal_stamped = geometry_msgs.msg.PoseStamped()
+      pose_goal_stamped.header.frame_id = tf_goal_frame_name
 
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (current_position.x - self.T_world2pouringboxtip.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + (current_position.y - self.T_world2pouringboxtip.transform.translation.y)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z + (current_position.z - self.T_world2pouringboxtip.transform.translation.z)
+      pose_goal = geometry_msgs.msg.Pose()
+      pose_goal.orientation.x = 0.0
+      pose_goal.orientation.y = 0.0
+      pose_goal.orientation.z = 0.0
+      pose_goal.orientation.w = 1.0
+      pose_goal.position.x = 0.0
+      pose_goal.position.y = 0.0
+      pose_goal.position.z = 0.0
 
-    self.move_group.set_pose_target(pose_goal)
-    # self.move_group.set_pose_target(pose_goal, end_effector_link=self.cylinder_name + "/" + self.pouring_box_tip_name)
+      pose_goal_stamped.pose = pose_goal
+
+    self.move_group.set_pose_target(pose_goal_stamped)
+    # self.move_group.set_pose_target(pose_goal_stamped, end_effector_link=self.cylinder_name + "/" + self.pouring_box_tip_name)
 
     #~~~~~~~~~~~~ Setup constraints - BEGIN
     consts = moveit_msgs.msg.Constraints()
@@ -299,8 +321,13 @@ class MoveGroupPythonIntefaceTutorial(object):
     if self.keep_orient:
       # create a path constraint
       orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
+      if is_goal_home:
+        orien_const.link_name = self.eef_link
+        orien_const.header.frame_id = starting_frame
+      else:
+        orien_const.link_name = eef_frame_name # self.eef_link
+        orien_const.header.frame_id = tf_goal_frame_name
+      
 
       #constrain it to be the same as my goal state.  Seems reasonable.
       orien_const.orientation.x = pose_goal.orientation.x
@@ -317,40 +344,18 @@ class MoveGroupPythonIntefaceTutorial(object):
 
       consts.orientation_constraints.append(orien_const)
       
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
 
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
+    if self.keep_orient:
       # print(consts)
       self.move_group.set_path_constraints(consts)
 
       # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
       self.move_group.set_planning_time(15.0)
     #~~~~~~~~~~~~ Setup constraints - END
+
+    self.move_group.set_planning_time(15.0)
+    # Before planning make sure you set the start state as the current state
+    self.move_group.set_start_state_to_current_state()
 
     ## Now, we call the planner to compute the plan and execute it.
     # self.move_group.go(wait=True)
@@ -384,791 +389,19 @@ class MoveGroupPythonIntefaceTutorial(object):
     # Note: there is no equivalent function for clear_joint_value_targets()
     self.move_group.clear_pose_targets()
     # Also clear path constraints
-    if self.keep_orient or self.keep_position:
-      self.move_group.clear_path_constraints()
-
-    # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
-
-
-  def go_to_pose_goal2(self):
-    self.keep_orient = True
-    self.keep_position = True
-    ## Planning to a Pose Goal
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-
-    theta = np.deg2rad(self.rot_angle)
-
-    Rnew = np.eye(4)
-    Rnew[1,1] = cos(theta)
-    Rnew[1,2] = sin(theta)
-    Rnew[2,1] = -sin(theta)
-    Rnew[2,2] = cos(theta)
-
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
-
-    current_position = self.move_group.get_current_pose().pose.position
-
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    R0new = np.dot(R0,Rnew)
-    Rgoal = np.dot(R0new,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
-
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (self.T_pouringboxtip2eef.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + sin(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z - sin(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-
-    self.move_group.set_pose_target(pose_goal)
-    # self.move_group.set_pose_target(pose_goal, end_effector_link=self.cylinder_name + "/" + self.pouring_box_tip_name)
-
-    # #~~~~~~~~~~~~ Setup constraints - BEGIN
-    consts = moveit_msgs.msg.Constraints()
-
     if self.keep_orient:
-      # create a path constraint
-      orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
-
-      #constrain it to be the same as my goal state.  Seems reasonable.
-      orien_const.orientation.x = pose_goal.orientation.x
-      orien_const.orientation.y = pose_goal.orientation.y
-      orien_const.orientation.z = pose_goal.orientation.z
-      orien_const.orientation.w = pose_goal.orientation.w
-      orien_const.absolute_x_axis_tolerance = 0.1 # 0.1
-      orien_const.absolute_y_axis_tolerance = 0.1 # pi # 0.1
-      orien_const.absolute_z_axis_tolerance = 2*pi # 0.1
-      orien_const.weight = 0.5
-
-      # orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().XYZ_EULER_ANGLES # Default
-      orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().ROTATION_VECTOR
-
-      consts.orientation_constraints.append(orien_const)
-      
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
-
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
-      # print(consts)
-      self.move_group.set_path_constraints(consts)
-
-      # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
-      self.move_group.set_planning_time(15.0)
-    #~~~~~~~~~~~~ Setup constraints - END
-
-
-    ## Now, we call the planner to compute the plan and execute it.
-    # self.move_group.go(wait=True)
-    user_confirmed = False
-    while not user_confirmed:
-      (is_planned, plan, plan_time, err_code) = self.move_group.plan()
-
-      if (is_planned == False):
-        print("PLANNING FAILED")
-        wanna_plan_again = self.single_yes_or_no_question("Would you like to try planning again?", default_no=False)
-        if wanna_plan_again:
-          continue
-        else:
-          print("planning failed, continuing without execution")
-          break
-      else:
-        self.display_trajectory(plan)
-        user_confirmed = self.single_yes_or_no_question("Do you accept the suggested plan?")
-    
-    if is_planned:
-      # save the plan for re use later
-      self.plan2 = plan
-      # Execute the plan
-      self.move_group.execute(self.plan2, wait=True)
-      
-
-    # Calling `stop()` ensures that there is no residual movement
-    self.move_group.stop()
-
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-    # # Also clear path constraints
-    if self.keep_orient or self.keep_position:
       self.move_group.clear_path_constraints()
 
     # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
+    # print ("============ End effector link: %s" % self.move_group.get_end_effector_link())
+
+    current_pose = self.move_group.get_current_pose().pose # in planning frame
+    # current_pose = self.move_group.get_current_pose(end_effector_link=self.cylinder_name + "/" + self.pouring_box_tip_name).pose # in planning frame
+    # print("current_pose: " + str(current_pose))
+    pose_goal_in_planning_frame = self.transform_pose(pose_goal_stamped, self.planning_frame).pose
+    # print("pose_goal_in_planning_frame: " + str(pose_goal_in_planning_frame))
+    return all_close(pose_goal_in_planning_frame, current_pose, 0.01)
 
-  def go_to_pose_goal3(self):
-    self.keep_orient = True
-    self.keep_position = True
-    ## Planning to a Pose Goal
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-
-    theta = np.deg2rad(0.0)
-
-    Rnew = np.eye(4)
-    Rnew[1,1] = cos(theta)
-    Rnew[1,2] = sin(theta)
-    Rnew[2,1] = -sin(theta)
-    Rnew[2,2] = cos(theta)
-
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
-
-    current_position = self.move_group.get_current_pose().pose.position
-
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    R0new = np.dot(R0,Rnew)
-    Rgoal = np.dot(R0new,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
-
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (self.T_pouringboxtip2eef.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + sin(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z - sin(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-
-    self.move_group.set_pose_target(pose_goal)
-    # self.move_group.set_pose_target(pose_goal, end_effector_link=self.cylinder_name + "/" + self.pouring_box_tip_name)
-
-    #~~~~~~~~~~~~ Setup constraints - BEGIN
-    consts = moveit_msgs.msg.Constraints()
-
-    if self.keep_orient:
-      # create a path constraint
-      orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
-
-      #constrain it to be the same as my goal state.  Seems reasonable.
-      orien_const.orientation.x = pose_goal.orientation.x
-      orien_const.orientation.y = pose_goal.orientation.y
-      orien_const.orientation.z = pose_goal.orientation.z
-      orien_const.orientation.w = pose_goal.orientation.w
-      orien_const.absolute_x_axis_tolerance = 0.1 # 0.1
-      orien_const.absolute_y_axis_tolerance = 0.1 # pi # 0.1
-      orien_const.absolute_z_axis_tolerance = 2*pi # 0.1
-      orien_const.weight = 0.5
-
-      # orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().XYZ_EULER_ANGLES # Default
-      orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().ROTATION_VECTOR
-
-      consts.orientation_constraints.append(orien_const)
-      
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
-
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
-      # print(consts)
-      self.move_group.set_path_constraints(consts)
-
-      # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
-      self.move_group.set_planning_time(15.0)
-    #~~~~~~~~~~~~ Setup constraints - END
-
-    ## Now, we call the planner to compute the plan and execute it.
-    # self.move_group.go(wait=True)
-    user_confirmed = False
-    while not user_confirmed:
-      (is_planned, plan, plan_time, err_code) = self.move_group.plan()
-
-      if (is_planned == False):
-        print("PLANNING FAILED")
-        wanna_plan_again = self.single_yes_or_no_question("Would you like to try planning again?", default_no=False)
-        if wanna_plan_again:
-          continue
-        else:
-          print("planning failed, continuing without execution")
-          break
-      else:
-        self.display_trajectory(plan)
-        user_confirmed = self.single_yes_or_no_question("Do you accept the suggested plan?")
-    
-    if is_planned:
-      # save the plan for re use later
-      self.plan3 = plan
-      # Execute the plan
-      self.move_group.execute(self.plan3, wait=True)
-      
-
-    # Calling `stop()` ensures that there is no residual movement
-    self.move_group.stop()
-
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-    # # Also clear path constraints
-    if self.keep_orient or self.keep_position:
-      self.move_group.clear_path_constraints()
-
-    # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
-
-  def plan_cartesian_path(self, scale=1):
-    ## Cartesian Paths
-    ## ^^^^^^^^^^^^^^^
-    ## You can plan a Cartesian path directly by specifying a list of waypoints
-    ## for the end-effector to go through. If executing  interactively in a
-    ## Python shell, set scale = 1.0.
-    ##
-    waypoints = []
-
-    wpose = self.move_group.get_current_pose().pose
-    wpose.position.z -= scale * 0.1  # First move up (z)
-    wpose.position.y += scale * 0.2  # and sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-    wpose.position.x += scale * 0.1  # Second move forward/backwards in (x)
-    waypoints.append(copy.deepcopy(wpose))
-
-    wpose.position.y -= scale * 0.1  # Third move sideways (y)
-    waypoints.append(copy.deepcopy(wpose))
-
-    # We want the Cartesian path to be interpolated at a resolution of 1 cm
-    # which is why we will specify 0.01 as the eef_step in Cartesian
-    # translation.  We will disable the jump threshold by setting it to 0.0,
-    # ignoring the check for infeasible jumps in joint space, which is sufficient
-    # for this tutorial.
-    (plan, fraction) = self.move_group.compute_cartesian_path(
-                                       waypoints,   # waypoints to follow
-                                       0.01,        # eef_step
-                                       0.0)         # jump_threshold
-
-    # Note: We are just planning, not asking move_group to actually move the robot yet:
-    return plan, fraction
-
-  def go_to_pose_goal_cartesian(self):
-    ## Planning to a Pose Goal Cartesian
-    waypoints = []
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-    # self.move_group.set_end_effector_link(self.cylinder_name + "/" + self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.eef_link + "/" + self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.eef_link + "/" + self.cylinder_name)
-    # self.move_group.set_end_effector_link(self.pouring_box_tip_name)
-    # self.move_group.set_end_effector_link(self.cylinder_name)
-
-
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
-
-    current_position = self.move_group.get_current_pose().pose.position
-
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    Rgoal = np.dot(R0,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
-
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (current_position.x - self.T_world2pouringboxtip.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + (current_position.y - self.T_world2pouringboxtip.transform.translation.y)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z + (current_position.z - self.T_world2pouringboxtip.transform.translation.z)
-
-    # self.move_group.set_pose_target(pose_goal)
-
-    #~~~~~~~~~~~~ Setup constraints - BEGIN
-    consts = moveit_msgs.msg.Constraints()
-
-    if self.keep_orient:
-      # create a path constraint
-      orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
-
-      #constrain it to be the same as my goal state.  Seems reasonable.
-      orien_const.orientation.x = pose_goal.orientation.x
-      orien_const.orientation.y = pose_goal.orientation.y
-      orien_const.orientation.z = pose_goal.orientation.z
-      orien_const.orientation.w = pose_goal.orientation.w
-      orien_const.absolute_x_axis_tolerance = 0.1 # 0.1
-      orien_const.absolute_y_axis_tolerance = 2.0*pi # 0.1
-      orien_const.absolute_z_axis_tolerance = 0.1 # 0.1
-      orien_const.weight = 0.5
-
-      # orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().XYZ_EULER_ANGLES # Default
-      orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().ROTATION_VECTOR
-
-      consts.orientation_constraints.append(orien_const)
-      
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
-
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
-      # print(consts)
-      self.move_group.set_path_constraints(consts)
-
-      # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
-      self.move_group.set_planning_time(15.0)
-    #~~~~~~~~~~~~ Setup constraints - END
-
-    waypoints.append(pose_goal)
-    jump_threshold=0.0
-    eef_step = 0.01
-
-
-    ## Now, we call the planner to compute the plan and execute it.
-    # self.move_group.go(wait=True)
-    user_confirmed = False
-    while not user_confirmed:
-      # (is_planned, plan, plan_time, err_code) = self.move_group.plan()
-      is_planned = True
-      (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, eef_step, jump_threshold) 
-
-      if (is_planned == False):
-        print("PLANNING FAILED")
-        wanna_plan_again = self.single_yes_or_no_question("Would you like to try planning again?", default_no=False)
-        if wanna_plan_again:
-          continue
-        else:
-          print("planning failed, continuing without execution")
-          break
-      else:
-        self.display_trajectory(plan) 
-        user_confirmed = self.single_yes_or_no_question("Do you accept the suggested plan?")
-    
-    if is_planned:
-      # save the plan for re use later
-      self.plan = plan
-      # Execute the plan
-      self.move_group.execute(self.plan, wait=True)
-      
-
-    # Calling `stop()` ensures that there is no residual movement
-    self.move_group.stop()
-
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-    # Also clear path constraints
-    if self.keep_orient or self.keep_position:
-      self.move_group.clear_path_constraints()
-
-    # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
-
-  def go_to_pose_goal2_cartesian(self):
-    ## Planning to a Pose Goal with cartesian planning
-    waypoints = []
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-
-    theta = np.deg2rad(self.rot_angle)
-
-    Rnew = np.eye(4)
-    Rnew[1,1] = cos(theta)
-    Rnew[1,2] = sin(theta)
-    Rnew[2,1] = -sin(theta)
-    Rnew[2,2] = cos(theta)
-
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
-
-    current_position = self.move_group.get_current_pose().pose.position
-
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    R0new = np.dot(R0,Rnew)
-    Rgoal = np.dot(R0new,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
-
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (self.T_pouringboxtip2eef.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + sin(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z - sin(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-
-    # self.move_group.set_pose_target(pose_goal)
-
-    # #~~~~~~~~~~~~ Setup constraints - BEGIN
-    consts = moveit_msgs.msg.Constraints()
-
-    if self.keep_orient:
-      # create a path constraint
-      orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
-
-      #constrain it to be the same as my goal state.  Seems reasonable.
-      orien_const.orientation.x = pose_goal.orientation.x
-      orien_const.orientation.y = pose_goal.orientation.y
-      orien_const.orientation.z = pose_goal.orientation.z
-      orien_const.orientation.w = pose_goal.orientation.w
-      orien_const.absolute_x_axis_tolerance = 0.1 # 0.1
-      orien_const.absolute_y_axis_tolerance = 0.1 # pi # 0.1
-      orien_const.absolute_z_axis_tolerance = 2*pi # 0.1
-      orien_const.weight = 0.5
-
-      # orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().XYZ_EULER_ANGLES # Default
-      orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().ROTATION_VECTOR
-
-      consts.orientation_constraints.append(orien_const)
-      
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
-
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
-      # print(consts)
-      self.move_group.set_path_constraints(consts)
-
-      # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
-      self.move_group.set_planning_time(15.0)
-    #~~~~~~~~~~~~ Setup constraints - END
-
-    waypoints.append(pose_goal)
-    jump_threshold=0.0
-    eef_step = 0.02
-
-
-    ## Now, we call the planner to compute the plan and execute it.
-    # self.move_group.go(wait=True)
-    user_confirmed = False
-    while not user_confirmed:
-      # (is_planned, plan, plan_time, err_code) = self.move_group.plan()
-      is_planned = True
-      (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, eef_step, jump_threshold) 
-
-      if (is_planned == False):
-        print("PLANNING FAILED")
-        wanna_plan_again = self.single_yes_or_no_question("Would you like to try planning again?", default_no=False)
-        if wanna_plan_again:
-          continue
-        else:
-          print("planning failed, continuing without execution")
-          break
-      else:
-        self.display_trajectory(plan)
-        user_confirmed = self.single_yes_or_no_question("Do you accept the suggested plan?")
-    
-    if is_planned:
-      # save the plan for re use later
-      self.plan2 = plan
-      # Execute the plan
-      self.move_group.execute(self.plan2, wait=True)
-      
-    # Calling `stop()` ensures that there is no residual movement
-    self.move_group.stop()
-
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-    # # Also clear path constraints
-    if self.keep_orient or self.keep_position:
-      self.move_group.clear_path_constraints()
-
-    # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
-
-  def go_to_pose_goal3_cartesian(self):
-    ## Planning to a Pose Goal cartesian
-    waypoints = []
-    ## ^^^^^^^^^^^^^^^^^^^^^^^
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-
-    self.move_group.set_start_state_to_current_state()
-
-    # Let's set the end effector frame different than the default one
-    self.move_group.set_end_effector_link(self.eef_link)
-
-    theta = np.deg2rad(0.0)
-
-    Rnew = np.eye(4)
-    Rnew[1,1] = cos(theta)
-    Rnew[1,2] = sin(theta)
-    Rnew[2,1] = -sin(theta)
-    Rnew[2,2] = cos(theta)
-
-    ## We can plan a motion for this group to a desired pose for the
-    ## end-effector:
-    self.T_world2pouringpoint = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringpoint_frame_name,  rospy.Time())
-    self.T_world2pouringboxtip = self.tfBuffer.lookup_transform(self.planning_frame, self.tf_pouringboxtip_frame_name,  rospy.Time())
-    self.T_pouringboxtip2eef = self.tfBuffer.lookup_transform(self.tf_pouringboxtip_frame_name, self.eef_link, rospy.Time())
-
-    current_position = self.move_group.get_current_pose().pose.position
-
-    R0 = self.tf2R(self.T_world2pouringpoint)
-    R1 = self.tf2R(self.T_pouringboxtip2eef)
-    R0new = np.dot(R0,Rnew)
-    Rgoal = np.dot(R0new,R1)
-    qgoal = tf_conversions.transformations.quaternion_from_matrix(Rgoal) 
-
-    pose_goal = geometry_msgs.msg.Pose()
-    pose_goal.orientation.x = qgoal[0]
-    pose_goal.orientation.y = qgoal[1]
-    pose_goal.orientation.z = qgoal[2]
-    pose_goal.orientation.w = qgoal[3]
-    
-    pose_goal.position.x = self.T_world2pouringpoint.transform.translation.x + (self.T_pouringboxtip2eef.transform.translation.x)
-    pose_goal.position.y = self.T_world2pouringpoint.transform.translation.y + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + sin(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-    pose_goal.position.z = self.T_world2pouringpoint.transform.translation.z - sin(theta)*(self.T_pouringboxtip2eef.transform.translation.y) + cos(theta)*(self.T_pouringboxtip2eef.transform.translation.z)
-
-    # self.move_group.set_pose_target(pose_goal)
-
-    #~~~~~~~~~~~~ Setup constraints - BEGIN
-    consts = moveit_msgs.msg.Constraints()
-
-    if self.keep_orient:
-      # create a path constraint
-      orien_const = moveit_msgs.msg.OrientationConstraint()
-      orien_const.link_name = self.eef_link
-      orien_const.header.frame_id = self.planning_frame
-
-      #constrain it to be the same as my goal state.  Seems reasonable.
-      orien_const.orientation.x = pose_goal.orientation.x
-      orien_const.orientation.y = pose_goal.orientation.y
-      orien_const.orientation.z = pose_goal.orientation.z
-      orien_const.orientation.w = pose_goal.orientation.w
-      orien_const.absolute_x_axis_tolerance = 0.1 # 0.1
-      orien_const.absolute_y_axis_tolerance = 0.1 # pi # 0.1
-      orien_const.absolute_z_axis_tolerance = 2*pi # 0.1
-      orien_const.weight = 0.5
-
-      # orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().XYZ_EULER_ANGLES # Default
-      orien_const.parameterization = moveit_msgs.msg.OrientationConstraint().ROTATION_VECTOR
-
-      consts.orientation_constraints.append(orien_const)
-      
-    if self.keep_position:
-      # Define position constrain box based on current pose and the target pose
-      primitive = SolidPrimitive()
-      primitive.type = primitive.BOX
-
-      constrain_box_scale = 2.0
-      x_dim = constrain_box_scale * fabs(pose_goal.position.x - current_position.x)
-      y_dim = constrain_box_scale * fabs(pose_goal.position.y - current_position.y)
-      z_dim = constrain_box_scale * fabs(pose_goal.position.z - current_position.z)
-      primitive.dimensions = [x_dim,y_dim,z_dim]
-
-      box_pose = geometry_msgs.msg.Pose()
-      box_pose.orientation.w = 1.0
-      # place btw start point and goal point
-      box_pose.position.x = (pose_goal.position.x + current_position.x)/2.0
-      box_pose.position.y = (pose_goal.position.y + current_position.y)/2.0
-      box_pose.position.z = (pose_goal.position.z + current_position.z)/2.0
-
-      pos_const = moveit_msgs.msg.PositionConstraint()
-      pos_const.link_name = self.eef_link
-      pos_const.header.frame_id = self.planning_frame
-      pos_const.constraint_region.primitives.append(primitive)
-      pos_const.constraint_region.primitive_poses.append(box_pose)
-      pos_const.weight = 0.5
-
-      consts.position_constraints.append(pos_const)
-
-    if self.keep_orient or self.keep_position:
-      # print(consts)
-      self.move_group.set_path_constraints(consts)
-
-      # Lets increase the planning time from the default 5 seconds to be sure the planner has enough time to succeed.
-      self.move_group.set_planning_time(15.0)
-    #~~~~~~~~~~~~ Setup constraints - END
-
-    waypoints.append(pose_goal)
-    jump_threshold=0.0
-    eef_step = 0.02
-
-    ## Now, we call the planner to compute the plan and execute it.
-    # self.move_group.go(wait=True)
-    user_confirmed = False
-    while not user_confirmed:
-      # (is_planned, plan, plan_time, err_code) = self.move_group.plan()
-      is_planned = True
-      (plan, fraction) = self.move_group.compute_cartesian_path(waypoints, eef_step, jump_threshold) 
-
-      if (is_planned == False):
-        print("PLANNING FAILED")
-        wanna_plan_again = self.single_yes_or_no_question("Would you like to try planning again?", default_no=False)
-        if wanna_plan_again:
-          continue
-        else:
-          print("planning failed, continuing without execution")
-          break
-      else:
-        self.display_trajectory(plan)
-        user_confirmed = self.single_yes_or_no_question("Do you accept the suggested plan?")
-    
-    if is_planned:
-      # save the plan for re use later
-      self.plan3 = plan
-      # Execute the plan
-      self.move_group.execute(self.plan3, wait=True)
-      
-
-    # Calling `stop()` ensures that there is no residual movement
-    self.move_group.stop()
-
-    # It is always good to clear your targets after planning with poses.
-    # Note: there is no equivalent function for clear_joint_value_targets()
-    self.move_group.clear_pose_targets()
-    # # Also clear path constraints
-    if self.keep_orient or self.keep_position:
-      self.move_group.clear_path_constraints()
-
-    # For testing:
-    current_pose = self.move_group.get_current_pose().pose
-    return all_close(pose_goal, current_pose, 0.01)
 
   def display_trajectory(self, plan):
     ## Displaying a Trajectory
@@ -1222,86 +455,6 @@ class MoveGroupPythonIntefaceTutorial(object):
     # If we exited the while loop without returning then we timed out
     return False
 
-
-  def add_ground(self, timeout=8):
-    ## Adding Objects to the Planning Scene
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ## First, we will create a box in the planning scene at the location of the end effector:
-    box_pose = geometry_msgs.msg.PoseStamped()
-    box_pose.header.frame_id =  self.tf_testbedorigin_frame_name # self.planning_frame
-    box_pose.pose.orientation.w = 1.0
-    box_pose.pose.position.x = 0.305
-    box_pose.pose.position.y = 0.0
-    box_pose.pose.position.z = -0.005 
-    self.scene.add_box(self.ground_name, box_pose, size=(0.9, 1.1, 0.01))
-
-    return self.wait_for_state_update(self.ground_name, box_is_known=True, timeout=timeout)
-
-  def add_block1(self, timeout=4):
-    ## Adding Objects to the Planning Scene
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ## First, we will create a box in the planning scene at the location of the end effector:
-    box_pose = geometry_msgs.msg.PoseStamped()
-    box_pose.header.frame_id =  self.tf_testbedorigin_frame_name # self.planning_frame
-    box_pose.pose.orientation.w = 1.0
-    box_pose.pose.position.x = 0.305
-    box_pose.pose.position.y = 0.305/2.0
-    box_pose.pose.position.z = 0.02 
-    self.scene.add_box(self.block1_name, box_pose, size=(0.08, 0.44, 0.04))
-
-    return self.wait_for_state_update(self.block1_name, box_is_known=True, timeout=timeout)
-
-  def add_block2(self, timeout=4):
-    ## Adding Objects to the Planning Scene
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ## First, we will create a box in the planning scene at the location of the end effector:
-    box_pose = geometry_msgs.msg.PoseStamped()
-    box_pose.header.frame_id =  self.tf_testbedorigin_frame_name # self.planning_frame
-    box_pose.pose.orientation.w = 1.0
-    box_pose.pose.position.x = 0.305
-    box_pose.pose.position.y = 0.33
-    box_pose.pose.position.z = 0.04 + 0.2
-    self.scene.add_box(self.block2_name, box_pose, size=(0.08, 0.04, 0.4))
-
-    return self.wait_for_state_update(self.block2_name, box_is_known=True, timeout=timeout)
-
-  def add_ramp(self, timeout=4):
-    ## Adding Objects to the Planning Scene
-    ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    
-
-    theta = np.deg2rad(self.ramp_angle)
-
-    Rnew = np.eye(4)
-    Rnew[1,1] = cos(theta)
-    Rnew[1,2] = -sin(theta)
-    Rnew[2,1] = sin(theta)
-    Rnew[2,2] = cos(theta)
-    qnew = tf_conversions.transformations.quaternion_from_matrix(Rnew) 
-
-    box_pose = geometry_msgs.msg.PoseStamped()
-    box_pose.header.frame_id =  self.tf_pouringpoint_frame_name # self.tf_testbedorigin_frame_name # self.planning_frame
-
-    box_pose.pose.orientation.x = qnew[0]
-    box_pose.pose.orientation.y = qnew[1]
-    box_pose.pose.orientation.z = qnew[2]
-    box_pose.pose.orientation.w = qnew[3]
-    
-    l = 0.4 # lenght of the ramp
-    w = 0.16 # width of the ramp
-    thickness = 0.002 # thickness of the ramp
-    s = self.pouring_offset_y
-    h = self.desired_pouring_height
-    temp = l*0.5*sin(theta) - s*tan(theta)
-
-    box_pose.pose.position.x = 0.0
-    box_pose.pose.position.y = -(temp/tan(theta))
-    box_pose.pose.position.z = -(h + temp)
-    self.scene.add_box(self.ramp_name, box_pose, size=(w, l, thickness))
-
-    return self.wait_for_state_update(self.ramp_name, box_is_known=True, timeout=timeout)
-
-
   def add_cylinder(self, timeout=4):
     ## Adding Objects to the Planning Scene
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1325,7 +478,7 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     return self.wait_for_state_update(self.cylinder_name, box_is_known=True, timeout=timeout)
 
-  def add_cylinder_with_subframes(self, timeout=4):
+  def add_cylinder_with_subframes(self, frame_to_add, obj_name_to_add, timeout=4):
     ## Adding Objects to the Planning Scene
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ## First, we will create a cylinder in the planning scene at the location of the end effector:
@@ -1334,8 +487,8 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     co = moveit_msgs.msg.CollisionObject()
     co.operation = moveit_msgs.msg.CollisionObject().ADD # co.ADD
-    co.id = self.cylinder_name
-    co.header.frame_id = self.eef_link
+    co.id = obj_name_to_add
+    co.header.frame_id = frame_to_add
 
     cylinder = SolidPrimitive()
     cylinder.type = SolidPrimitive.CYLINDER
@@ -1350,28 +503,30 @@ class MoveGroupPythonIntefaceTutorial(object):
 
     cylinder_pose.pose.position.x = 0.0 
     cylinder_pose.pose.position.y = height/2.0 # 
-    cylinder_pose.pose.position.z = -0.006 # 
+    cylinder_pose.pose.position.z = 0.0 # -0.006 # 
     co.primitive_poses = [cylinder_pose.pose]
 
+    # By default, the defined subframe poses are wrt. the frame of the attached objects (e.g the cylinder's)
+    # some some thinking is be needed for the subframe poses to set them correctly
     co.subframe_names = [self.pouring_box_tip_name]
 
     subframe_pose = geometry_msgs.msg.PoseStamped()
     subframe_pose.pose.orientation.x = 0.5
     subframe_pose.pose.orientation.y = 0.5
     subframe_pose.pose.orientation.z = 0.5
-    subframe_pose.pose.orientation.w = -0.5
+    subframe_pose.pose.orientation.w = 0.5
 
-    subframe_pose.pose.position.x = 0.055
-    subframe_pose.pose.position.y = height
-    subframe_pose.pose.position.z = -0.006 # 
+    subframe_pose.pose.position.x = 0.0
+    subframe_pose.pose.position.y = -0.055
+    subframe_pose.pose.position.z = height/2.0
     co.subframe_poses = [subframe_pose.pose]
 
     self.scene.add_object(co)
 
-    return self.wait_for_state_update(self.cylinder_name, box_is_known=True, timeout=timeout)
+    return self.wait_for_state_update(obj_name_to_add, box_is_known=True, timeout=timeout)
 
 
-  def attach_cylinder(self, timeout=4):
+  def attach_cylinder(self, obj_name_to_attach, timeout=4):
     ## Attaching CylinderObjects to the Robot
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ## Next, we will attach the cylinder box to the Fanuc end effector. Manipulating objects requires the
@@ -1385,7 +540,7 @@ class MoveGroupPythonIntefaceTutorial(object):
     touch_links = self.robot.get_link_names()
     
     # self.move_group.attach_object(self.cylinder_name,self.eef_link,touch_links=touch_links)
-    self.scene.attach_box(self.eef_link, self.cylinder_name, touch_links=touch_links)
+    self.scene.attach_box(self.eef_link, obj_name_to_attach, touch_links=touch_links)
 
     # # create attached collision object
     # aco = moveit_msgs.msg.AttachedCollisionObject()
@@ -1396,47 +551,32 @@ class MoveGroupPythonIntefaceTutorial(object):
     # self.scene.attach_object(aco)
 
     # We wait for the planning scene to update.
-    return self.wait_for_state_update(self.cylinder_name, box_is_attached=True, box_is_known=False, timeout=timeout)
+    return self.wait_for_state_update(obj_name_to_attach, box_is_attached=True, box_is_known=False, timeout=timeout)
 
 
-  def detach_cylinder(self, timeout=4):
+  def detach_cylinder(self, obj_name_to_detach, timeout=4):
     ## Detaching Objects from the Robot
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ## We can also detach and remove the object from the planning scene:
-    self.scene.remove_attached_object(self.eef_link, name=self.cylinder_name)
+    self.scene.remove_attached_object(self.eef_link, name=obj_name_to_detach)
     # self.move_group.detach_object(name=self.cylinder_name)
 
     # Do not forget to reset your end_effector_link to a robot link when you detach your object
     self.move_group.set_end_effector_link(self.eef_link)
 
     # We wait for the planning scene to update.
-    return self.wait_for_state_update(self.cylinder_name, box_is_known=True, box_is_attached=False, timeout=timeout)
+    return self.wait_for_state_update(obj_name_to_detach, box_is_known=True, box_is_attached=False, timeout=timeout)
 
-  def remove_ground(self, timeout=4):
-    self.scene.remove_world_object(self.ground_name)
-    return self.wait_for_state_update(self.ground_name, box_is_attached=False, box_is_known=False, timeout=timeout)
 
-  def remove_block1(self, timeout=4):
-    self.scene.remove_world_object(self.block1_name)
-    return self.wait_for_state_update(self.block1_name, box_is_attached=False, box_is_known=False, timeout=timeout)
-
-  def remove_block2(self, timeout=4):
-    self.scene.remove_world_object(self.block2_name)
-    return self.wait_for_state_update(self.block2_name, box_is_attached=False, box_is_known=False, timeout=timeout)
-
-  def remove_ramp(self, timeout=4):
-    self.scene.remove_world_object(self.ramp_name)
-    return self.wait_for_state_update(self.ramp_name, box_is_attached=False, box_is_known=False, timeout=timeout)
-
-  def remove_cylinder(self, timeout=4):
+  def remove_cylinder(self, obj_name_to_remove, timeout=4):
     ## Removing Objects from the Planning Scene
     ## ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     ## We can remove the cylinder from the world.
-    self.scene.remove_world_object(self.cylinder_name)
+    self.scene.remove_world_object(obj_name_to_remove)
     ## **Note:** The object must be detached before we can remove it from the world
 
     # We wait for the planning scene to update.
-    return self.wait_for_state_update(self.cylinder_name, box_is_attached=False, box_is_known=False, timeout=timeout)
+    return self.wait_for_state_update(obj_name_to_remove, box_is_attached=False, box_is_known=False, timeout=timeout)
 
   def print_tolerances(self):
     tol_joints, tol_pos, tol_orient =  self.move_group.get_goal_tolerance()
@@ -1458,6 +598,15 @@ class MoveGroupPythonIntefaceTutorial(object):
         q = [qx,qy,qz,qw]
         R = tf.transformations.quaternion_matrix(q)
         return R # R[:3,:3]
+
+  def transform_pose(self, input_pose_stamped, to_frame): 
+    try:
+        # ** It is important to wait for the listener to start listening. Hence the rospy.Duration(1)
+        output_pose_stamped = self.tfBuffer.transform(input_pose_stamped, to_frame, rospy.Duration(1))
+        return output_pose_stamped
+
+    except (tf2_ros.LookupException, tf2_ros.ConnectivityException, tf2_ros.ExtrapolationException):
+        raise
 
   def single_yes_or_no_question(self, question, default_no=True):
       choices = ' [y/N]: ' if default_no else ' [Y/n]: '
@@ -1484,46 +633,29 @@ def main():
     tutorial = MoveGroupPythonIntefaceTutorial()
 
     
-
-    # print ("============ Adding Ground plane to the planning scene ...")
-    # input("============ Press `Enter` to add a ground plane to the planning scene ...")
-    # result =tutorial.add_ground()
-    # print("Is add ground plane to the planning scene successful: " + str(result))
-
-    # print ("============ Adding block1 to the planning scene ...")
-    # input("============ Press `Enter` to add block1 to the planning scene ...")
-    # result =tutorial.add_block1()
-    # print("Is add block1 to the planning scene successful: " + str(result))
-
-    # print ("============ Adding block2 to the planning scene ...")
-    # input("============ Press `Enter` to add block2 to the planning scene ...")
-    # result =tutorial.add_block2()
-    # print("Is add block2 to the planning scene successful: " + str(result))
-
-    # print ("============ Adding ramp to the planning scene ...")
-    # input("============ Press `Enter` to add ramp to the planning scene ...")
-    # result =tutorial.add_ramp()
-    # print("Is add ramp to the planning scene successful: " + str(result))
-
+    ########################### ADD COLLISION BOXES TO THE SCENE #######################
     print ("============ Adding a Cylinder to the planning scene ...")
-    input("============ Press `Enter` to add a cylinder/box to the planning scene ...")
+    input("============ Press `Enter` to add a cylinder/box 1 to the planning scene ...")
     # tutorial.add_cylinder()
-    result =tutorial.add_cylinder_with_subframes()
+    result =tutorial.add_cylinder_with_subframes(tutorial.tf_cabinet_pickpoint_frame_name_l1p1, tutorial.cylinder_name_l1p1)
     print("Is add a cylinder/box to the planning scene successful: " + str(result))
 
-    print ("============ Attaching a Cylinder to the Fanuc robot ...")
-    input("============ Press `Enter` to attach a Cylinder/box to the Fanuc robot ...")
-    result = tutorial.attach_cylinder()
-    print("Is attach a Cylinder/box to the Fanuc robot successful: " + str(result))
+    input("============ Press `Enter` to add a cylinder/box 2 to the planning scene ...")
+    # tutorial.add_cylinder()
+    result =tutorial.add_cylinder_with_subframes(tutorial.tf_cabinet_pickpoint_frame_name_l1p2, tutorial.cylinder_name_l1p2)
+    print("Is add a cylinder/box to the planning scene successful: " + str(result))
 
+    input("============ Press `Enter` to add a cylinder/box 3 to the planning scene ...")
+    # tutorial.add_cylinder()
+    result =tutorial.add_cylinder_with_subframes(tutorial.tf_cabinet_pickpoint_frame_name_l2p1, tutorial.cylinder_name_l2p1)
+    print("Is add a cylinder/box to the planning scene successful: " + str(result))
 
+    input("============ Press `Enter` to add a cylinder/box 4 to the planning scene ...")
+    # tutorial.add_cylinder()
+    result =tutorial.add_cylinder_with_subframes(tutorial.tf_cabinet_pickpoint_frame_name_l2p2, tutorial.cylinder_name_l2p2)
+    print("Is add a cylinder/box to the planning scene successful: " + str(result))
 
-
-    # print ("============ Press `Enter` to close the gripper ...")
-    # input()
-    # result = tutorial.close_gripper()
-    # print("Is closing gripper result sufficiently close to goal: " + str(result))
-
+    ########################### MOVE ROBOT TO HOME POSITION #######################
     print ("============ Press `Enter` to execute a movement using a joint state goal ...")
     input()
     result = tutorial.go_to_joint_state()
@@ -1534,50 +666,130 @@ def main():
     result = tutorial.go_to_joint_state_zeros()
     print("Is go_to_joint_state (ZEROS result sufficiently close to goal: " + str(result))
 
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ POINT 1 - LONG HOPPER: BEGIN~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+    ########################### MOVE ROBOT TO PICK UP POSITION 1 #######################
+    # TODO
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_cabinet_pickpoint_frame_name_l1p1  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p1, tutorial.pouring_box_bottom_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
-    # print ("============ Press `Enter` to execute a movement using a pose goal ...")
-    # input()
-    # result = tutorial.go_to_pose_goal()
-    # # result = tutorial.go_to_pose_goal_cartesian()
-    # print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+    ########################### ATTACH BOX 1 TO THE ROBOT #######################
+    print ("============ Attaching a Cylinder to the Fanuc robot ...")
+    input("============ Press `Enter` to attach a Cylinder/box 1 to the Fanuc robot ...")
+    result = tutorial.attach_cylinder(tutorial.cylinder_name_l1p1)
+    print("Is attach a Cylinder/box to the Fanuc robot successful: " + str(result))
 
-    # print ("============ Press `Enter` to execute a movement using a pose goal 2...")
-    # input()
-    # result = tutorial.go_to_pose_goal2()
-    # # result = tutorial.go_to_pose_goal2_cartesian()
-    # print("Is go_to_pose_goal result sufficiently close to goal 2: " + str(result))
+    ########################### MOVE THE ROBOT TO HOME POSE WITH BOX 1 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p1, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
-    # print ("============ Press `Enter` to execute a movement using a pose goal 3(REVERSE) ...")
-    # input()
-    # result = tutorial.go_to_pose_goal3()
-    # # result = tutorial.go_to_pose_goal3_cartesian()
-    # print("Is go_to_pose_goal result sufficiently close to goal 3 (REVERSE): " + str(result))
+    ########################### MOVE THE ROBOT TO LONG HOPPER WITH BOX 1 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_hopper_long_pouringpoint_frame_name  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_hopper_long_pouringpoint_frame_name, tutorial.pouring_box_tip_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
+    ########################### POUR TO LONG HOPPER WITH BOX 1 #######################
+    # TODO
 
+    ########################### REVERT POURING LONG HOPPER WITH BOX 1 #######################
+    # TODO
 
+    ########################### MOVE THE ROBOT TO HOME POSE WITH BOX 1 AGAIN #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_hopper_long_pouringpoint_frame_name, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
+    ########################### MOVE ROBOT TO PICK UP POSITION 1 AGAIN #######################
+    # TODO
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_cabinet_pickpoint_frame_name_l1p1  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p1, tutorial.pouring_box_bottom_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
-
-    # print ("============ Press `Enter` to execute a movement using a joint state goal AGAIN ...")
-    # input()
-    # result = tutorial.go_to_joint_state()
-    # print("Is go_to_joint_state result sufficiently close to goal: " + str(result))
-
+    ########################### DETACH THE BOX 1 FROM ROBOT #######################
     print ("============ Press `Enter` to detach the cylinder/box from the Fanuc robot ...")
     input()
-    tutorial.detach_cylinder()
+    tutorial.detach_cylinder(tutorial.cylinder_name_l1p1)
 
-    # print ("============ Press `Enter` to remove the cylinder/box from the planning scene ...")
-    # input()
-    tutorial.remove_cylinder()
+    ########################### MOVE THE ROBOT TO HOME POSE FREELY FROM PICKING POINT 1 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p1, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
 
-    # # print ("============ Press `Enter` to remove the ramp from the planning scene ...")
-    # # input()
-    # tutorial.remove_ramp()
-    # tutorial.remove_block2()
-    # tutorial.remove_block1()
-    # tutorial.remove_ground()
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ POINT 2 - SHORT HOPPER: BEGIN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+    ########################### MOVE ROBOT TO PICK UP POSITION 2 #######################
+    # TODO
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_cabinet_pickpoint_frame_name_l1p2  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p2, tutorial.pouring_box_bottom_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+    ########################### ATTACH BOX 2 TO THE ROBOT #######################
+    print ("============ Attaching a Cylinder to the Fanuc robot ...")
+    input("============ Press `Enter` to attach a Cylinder/box 2 to the Fanuc robot ...")
+    result = tutorial.attach_cylinder(tutorial.cylinder_name_l1p2)
+    print("Is attach a Cylinder/box to the Fanuc robot successful: " + str(result))
+
+    ########################### MOVE THE ROBOT TO HOME POSE WITH BOX 2 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p2, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+    ########################### MOVE THE ROBOT TO SHORT HOPPER WITH BOX 2 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_hopper_short_pouringpoint_frame_name  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_hopper_short_pouringpoint_frame_name, tutorial.pouring_box_tip_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+    ########################### POUR TO SHORT HOPPER WITH BOX 2 #######################
+    # TODO
+
+    ########################### REVERT POURING SHORT HOPPER WITH BOX 2 #######################
+    # TODO
+
+    ########################### MOVE THE ROBOT TO HOME POSE WITH BOX 2 AGAIN #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_hopper_short_pouringpoint_frame_name, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+    ########################### MOVE ROBOT TO PICK UP POSITION 2 AGAIN #######################
+    # TODO
+    print ("============ Press `Enter` to execute a movement to: '"+ tutorial.tf_cabinet_pickpoint_frame_name_l1p2  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p2, tutorial.pouring_box_bottom_name)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+    ########################### DETACH THE BOX 2 FROM ROBOT #######################
+    print ("============ Press `Enter` to detach the cylinder/box from the Fanuc robot ...")
+    input()
+    tutorial.detach_cylinder(tutorial.cylinder_name_l1p2)
+
+    ########################### MOVE THE ROBOT TO HOME POSE FREELY FROM PICKING POINT 1 #######################
+    print ("============ Press `Enter` to execute a movement to: '"+ "HOME"  +"' ...")
+    input()
+    result = tutorial.go_to_tf_pose_goal(tutorial.tf_cabinet_pickpoint_frame_name_l1p2, tutorial.eef_link, is_goal_home=True)
+    print("Is go_to_pose_goal result sufficiently close to goal: " + str(result))
+
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+    ########################### REMOVE COLLISION BOXES FROM THE SCENE #######################
+    tutorial.remove_cylinder(tutorial.cylinder_name_l1p1)
+    tutorial.remove_cylinder(tutorial.cylinder_name_l1p2)
+    tutorial.remove_cylinder(tutorial.cylinder_name_l2p1)
+    tutorial.remove_cylinder(tutorial.cylinder_name_l2p2)
 
 
     print ("============ Python tutorial demo complete!")

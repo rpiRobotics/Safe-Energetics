@@ -3,6 +3,17 @@
   <xacro:include filename="$(find cabinet)/urdf/cabinet_macro.xacro"/>
   <xacro:cabinet prefix=""/>
 
+  <xacro:property name="h_level_1" value="0.88" />
+  <xacro:property name="h_level_2" value="1.38" /> <!-- 82 inch = 2.0828 m, 90 inch = 2.286 m -->
+  <xacro:property name="distance_x" value="0.15" /> 
+  <xacro:property name="distance_y" value="0.0" /> 
+
+
+  <!-- Pouring point RPY -->
+  <xacro:property name="R_pouring_point" value="${90.0/180.0*pi}" /> 
+  <xacro:property name="P_pouring_point" value="${0.0/180.0*pi}" /> 
+  <xacro:property name="Y_pouring_point" value="${0.0/180.0*pi}" /> 
+
   <link name="cabinet_base_plate">
     <!-- <visual>
       <origin rpy="0 0 0" xyz="0 0 0.0127"/>
@@ -26,4 +37,35 @@
     <!-- <origin rpy="1.5708 0 1.5708" xyz="0 0 0"/> -->
     <origin rpy="0 0 0" xyz="0 0 0"/>
   </joint>
+
+
+  <!-- Pickup points in the cabinet -->
+  <link name="cabinet_picking_level_1_point_1"></link>
+  <joint name="cabinet_picking_level_1_point_1" type="fixed">
+    <child link="cabinet_picking_level_1_point_1"/>
+    <parent link="cabinet_base_link"/>
+    <origin xyz="${distance_x} ${distance_y} ${h_level_1}" rpy="${R_pouring_point} ${P_pouring_point} ${Y_pouring_point}"/>
+  </joint>
+
+  <link name="cabinet_picking_level_1_point_2"></link>
+  <joint name="cabinet_picking_level_1_point_2" type="fixed">
+    <child link="cabinet_picking_level_1_point_2"/>
+    <parent link="cabinet_base_link"/>
+    <origin xyz="${-distance_x} ${distance_y} ${h_level_1}" rpy="${R_pouring_point} ${P_pouring_point} ${Y_pouring_point}"/>
+  </joint>
+
+  <link name="cabinet_picking_level_2_point_1"></link>
+  <joint name="cabinet_picking_level_2_point_1" type="fixed">
+    <child link="cabinet_picking_level_2_point_1"/>
+    <parent link="cabinet_base_link"/>
+    <origin xyz="${distance_x} ${distance_y} ${h_level_2}" rpy="${R_pouring_point} ${P_pouring_point} ${Y_pouring_point}"/>
+  </joint>
+
+  <link name="cabinet_picking_level_2_point_2"></link>
+  <joint name="cabinet_picking_level_2_point_2" type="fixed">
+    <child link="cabinet_picking_level_2_point_2"/>
+    <parent link="cabinet_base_link"/>
+    <origin xyz="${-distance_x} ${distance_y} ${h_level_2}" rpy="${R_pouring_point} ${P_pouring_point} ${Y_pouring_point}"/>
+  </joint>
+
 </robot>

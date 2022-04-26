@@ -7,9 +7,10 @@ Panels:
         - /MotionPlanning1
         - /MotionPlanning1/Scene Robot1
         - /MotionPlanning1/Planning Request1
+        - /MotionPlanning1/Planned Path1
         - /MotionPlanning1/Planned Path1/Links1
         - /TF1/Frames1
-      Splitter Ratio: 0.5
+      Splitter Ratio: 0.5263724327087402
     Tree Height: 1628
   - Class: rviz/Help
     Name: Help
@@ -131,6 +132,22 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          cabinet_picking_level_1_point_1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_1_point_2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_2_point_1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_2_point_2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           cage_base_link:
             Alpha: 1
             Show Axes: false
@@ -184,6 +201,14 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          fanuc_pouring_box_bottom:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          fanuc_pouring_box_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           fanuc_tool0:
             Alpha: 1
             Show Axes: false
@@ -202,12 +227,20 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          hopper_long_pouring_point:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           hopper_short_base_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: false
           hopper_short_base_plate:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          hopper_short_pouring_point:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -318,6 +351,22 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          cabinet_picking_level_1_point_1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_1_point_2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_2_point_1:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          cabinet_picking_level_2_point_2:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           cage_base_link:
             Alpha: 1
             Show Axes: false
@@ -371,6 +420,14 @@ Visualization Manager:
             Show Axes: false
             Show Trail: false
             Value: true
+          fanuc_pouring_box_bottom:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          fanuc_pouring_box_tip:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           fanuc_tool0:
             Alpha: 1
             Show Axes: false
@@ -389,12 +446,20 @@ Visualization Manager:
             Alpha: 1
             Show Axes: false
             Show Trail: false
+          hopper_long_pouring_point:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
           hopper_short_base_link:
             Alpha: 1
             Show Axes: false
             Show Trail: false
             Value: true
           hopper_short_base_plate:
+            Alpha: 1
+            Show Axes: false
+            Show Trail: false
+          hopper_short_pouring_point:
             Alpha: 1
             Show Axes: false
             Show Trail: false
@@ -436,6 +501,14 @@ Visualization Manager:
           Value: false
         cabinet_base_plate:
           Value: true
+        cabinet_picking_level_1_point_1:
+          Value: true
+        cabinet_picking_level_1_point_2:
+          Value: true
+        cabinet_picking_level_2_point_1:
+          Value: true
+        cabinet_picking_level_2_point_2:
+          Value: true
         cage_base_link:
           Value: false
         fanuc_base:
@@ -445,7 +518,7 @@ Visualization Manager:
         fanuc_base_plate:
           Value: true
         fanuc_flange:
-          Value: true
+          Value: false
         fanuc_link_1:
           Value: true
         fanuc_link_2:
@@ -458,6 +531,10 @@ Visualization Manager:
           Value: false
         fanuc_link_6:
           Value: false
+        fanuc_pouring_box_bottom:
+          Value: true
+        fanuc_pouring_box_tip:
+          Value: true
         fanuc_tool0:
           Value: true
         floor:
@@ -466,14 +543,18 @@ Visualization Manager:
           Value: false
         hopper_long_base_plate:
           Value: true
+        hopper_long_pouring_point:
+          Value: true
         hopper_short_base_link:
           Value: false
         hopper_short_base_plate:
           Value: true
+        hopper_short_pouring_point:
+          Value: true
         world:
           Value: true
       Marker Alpha: 1
-      Marker Scale: 0.5
+      Marker Scale: 0.4000000059604645
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -494,7 +575,14 @@ Visualization Manager:
                             {}
           cabinet_base_plate:
             cabinet_base_link:
-              {}
+              cabinet_picking_level_1_point_1:
+                {}
+              cabinet_picking_level_1_point_2:
+                {}
+              cabinet_picking_level_2_point_1:
+                {}
+              cabinet_picking_level_2_point_2:
+                {}
           cage_base_link:
             {}
           fanuc_base_plate:
@@ -509,15 +597,20 @@ Visualization Manager:
                         fanuc_link_6:
                           fanuc_flange:
                             fanuc_tool0:
-                              {}
+                              fanuc_pouring_box_bottom:
+                                {}
+                              fanuc_pouring_box_tip:
+                                {}
           floor:
             {}
           hopper_long_base_plate:
             hopper_long_base_link:
-              {}
+              hopper_long_pouring_point:
+                {}
             hopper_short_base_plate:
               hopper_short_base_link:
-                {}
+                hopper_short_pouring_point:
+                  {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -536,7 +629,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.920476913452148
+      Distance: 4.491345405578613
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -544,17 +637,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.75
       Focal Point:
-        X: 1.2803491353988647
-        Y: 1.7068370580673218
-        Z: 0.5568724274635315
+        X: 2.073195457458496
+        Y: 1.3723084926605225
+        Z: 1.3367094993591309
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5850000977516174
+      Pitch: 0.45500051975250244
       Target Frame: world
-      Yaw: 5.38502836227417
+      Yaw: 5.205142498016357
     Saved: ~
 Window Geometry:
   Displays:
