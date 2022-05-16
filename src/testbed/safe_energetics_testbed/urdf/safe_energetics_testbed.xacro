@@ -39,7 +39,7 @@
   <joint name="cage_to_world" type="fixed">
     <parent link="world"/>
     <child link="cage_base_link"/>
-    <origin rpy="0 0 -1.57079" xyz="-1.282 3.271 0"/>
+    <origin rpy="0 0 -1.57079632679" xyz="-1.282 3.271 0"/>
   </joint>
 
 
@@ -58,13 +58,13 @@
   <joint name="fanuc_robot_to_world" type="fixed">
     <child link="fanuc_base_plate"/>
     <parent link="world"/>
-    <origin rpy="0 0 -1.57079" xyz="2.0 2.0 0"/>
+    <origin rpy="0 0 -1.57079632679" xyz="2.0 2.0 0"/>
   </joint>
 
   <joint name="cabinet_to_world" type="fixed">
     <child link="cabinet_base_plate"/>
     <parent link="world"/>
-    <origin rpy="0 0 1.57079" xyz="3.2 2.0 0"/>
+    <origin rpy="0 0 1.57079632679" xyz="3.2 2.0 0"/>
   </joint>
 
   <joint name="hopper_long_to_world" type="fixed">

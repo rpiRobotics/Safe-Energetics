@@ -1,5 +1,7 @@
 #!/bin/bash
 
+sudo apt install ros-noetic-moveit-opw-kinematics-plugin;
+
 cd; 
 
 mkdir catkin_ws_safe_energetics; 
